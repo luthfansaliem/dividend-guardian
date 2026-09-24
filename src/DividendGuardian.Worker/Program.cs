@@ -2,6 +2,7 @@ using DividendGuardian.AI;
 using DividendGuardian.Infrastructure;
 using DividendGuardian.Notification;
 using DividendGuardian.Quant;
+using DividendGuardian.Worker;
 using Microsoft.Extensions.Options;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -61,14 +62,11 @@ builder.Services.AddSingleton<FundamentalCollector>();
 builder.Services.AddHttpClient<TwelveDataFundamentalDataProvider>();
 builder.Services.AddSingleton<IFundamentalDataProvider>(sp =>
 {
-    var options = sp.GetRequiredService<IOptions<FundamentalDataOptions>>().Value;
-
-    if (options.Provider.Equals("twelvedata", StringComparison.OrdinalIgnoreCase))
+    var options = sp.GetRequiredService<IOptions<FundamentalDataOptions>>();
+    if (options.Value.Provider.Equals("twelvedata", StringComparison.OrdinalIgnoreCase))
         return sp.GetRequiredService<TwelveDataFundamentalDataProvider>();
-
-    if (options.Provider.Equals("csv", StringComparison.OrdinalIgnoreCase))
+    if (options.Value.Provider.Equals("csv", StringComparison.OrdinalIgnoreCase))
         return new CsvFundamentalDataProvider(options);
-
     return new NotConfiguredFundamentalDataProvider();
 });
 
