@@ -7,9 +7,13 @@ public sealed class Worker(
     ILogger<Worker> logger,
     Database database,
     MarketDataCollector marketData,
+    FundamentalCollector fundamentals,
     IOptions<WorkerOptions> options,
-    IOptions<MarketDataOptions> marketOptions) : BackgroundService
+    IOptions<MarketDataOptions> marketOptions,
+    IOptions<FundamentalDataOptions> fundamentalOptions) : BackgroundService
 {
+    private DateTimeOffset? lastFundamentalRun;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Dividend Guardian started. Environment={Environment}", options.Value.Environment);
@@ -31,9 +35,20 @@ public sealed class Worker(
                 {
                     logger.LogWarning("Market data provider is not configured. Set MARKET_DATA_PROVIDER.");
                 }
+
+                if (!fundamentalOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase) &&
+                    (lastFundamentalRun is null ||
+                     DateTimeOffset.UtcNow - lastFundamentalRun.Value >= TimeSpan.FromDays(Math.Max(1, options.Value.FundamentalIntervalDays))))
+                {
+                    var to = DateOnly.FromDateTime(DateTime.UtcNow);
+                    var from = to.AddYears(-Math.Max(1, fundamentalOptions.Value.LookbackYears));
+                    var rows = await fundamentals.CollectAsync(from, to, stoppingToken);
+                    lastFundamentalRun = DateTimeOffset.UtcNow;
+                    logger.LogInformation("Fundamental data cycle complete. Rows written={Rows}", rows);
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
-            catch (Exception ex) { logger.LogError(ex, "Daily cycle failed."); }
+            catch (Exception ex) { logger.LogError(ex, "Scheduled cycle failed."); }
 
             await Task.Delay(options.Value.Interval, stoppingToken);
         }
@@ -44,4 +59,5 @@ public sealed class WorkerOptions
 {
     public string Environment { get; set; } = "Development";
     public TimeSpan Interval { get; set; } = TimeSpan.FromHours(24);
+    public int FundamentalIntervalDays { get; set; } = 7;
 }
