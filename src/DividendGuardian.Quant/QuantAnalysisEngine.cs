@@ -23,12 +23,15 @@ public sealed record QuantAnalysisResult(
     decimal? CurrentFcfYieldPercent,
     decimal? HistoricalMedianFcfYieldPercent,
     decimal RiskScore,
+    FairValueRange FairValue,
+    decimal? MarginOfSafety,
     IReadOnlyList<string> Reasons);
 
 public sealed class QuantAnalysisEngine
 {
     private readonly FundamentalMetricsEngine _metrics = new();
     private readonly QuantScoringEngine _scoring = new();
+    private readonly FairValueEngine _fairValue = new();
 
     public QuantAnalysisResult Analyze(QuantAnalysisInput input)
     {
@@ -93,19 +96,33 @@ public sealed class QuantAnalysisEngine
             metrics.EarningsConsistencyScore,
             peScore, yieldScore, fcfScore, riskScore);
 
+        var fairValue = _fairValue.Calculate(new FairValueInput(
+            ForwardDps: latestDps > 0 ? latestDps : null,
+            NormalizedEps: latest.Eps > 0 ? latest.Eps : null,
+            NormalizedFcfPerShare: latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
+                ? latest.FreeCashFlow / latest.SharesOutstanding
+                : null,
+            HistoricalMedianDividendYieldPercent: historicalYield,
+            HistoricalMedianPe: historicalPe,
+            HistoricalMedianFcfYieldPercent: historicalFcfYield));
+
+        var marginOfSafety = FairValueEngine.MarginOfSafety(
+            input.CurrentPrice, fairValue.Range.Conservative);
+
         var reasons = BuildReasons(currentYield, historicalYield, currentPe, historicalPe,
-            currentFcfYield, metrics, riskScore);
+            currentFcfYield, metrics, riskScore, fairValue, marginOfSafety);
 
         return new QuantAnalysisResult(
             score, metrics, input.CurrentPrice, currentYield, historicalYield,
-            currentPe, historicalPe, currentFcfYield, historicalFcfYield, riskScore, reasons);
+            currentPe, historicalPe, currentFcfYield, historicalFcfYield, riskScore,
+            fairValue.Range, marginOfSafety, reasons);
     }
 
     private static decimal ScorePe(decimal? current, decimal? historical)
     {
         if (current is null || historical is null || current <= 0 || historical <= 0) return 0;
         var ratio = current.Value / historical.Value;
-        return ratio <= .70m ? 10m : ratio <= .85m ? 8m : ratio <= 1m ? 6m :
+        return ratio <= .70m ? 10m : ratio <= .85m ? 8m : ratio <= 1m ? 6m : 
                ratio <= 1.15m ? 4m : ratio <= 1.30m ? 2m : 0m;
     }
 
@@ -129,9 +146,16 @@ public sealed class QuantAnalysisEngine
         return Math.Max(0, Math.Min(15, score));
     }
 
-    private static IReadOnlyList<string> BuildReasons(decimal currentYield, decimal? historicalYield,
-        decimal? currentPe, decimal? historicalPe, decimal? currentFcfYield,
-        DividendQualityMetrics metrics, decimal riskScore)
+    private static IReadOnlyList<string> BuildReasons(
+        decimal currentYield,
+        decimal? historicalYield,
+        decimal? currentPe,
+        decimal? historicalPe,
+        decimal? currentFcfYield,
+        DividendQualityMetrics metrics,
+        decimal riskScore,
+        FairValueResult fairValue,
+        decimal? marginOfSafety)
     {
         var reasons = new List<string>();
         reasons.Add(historicalYield is not null
@@ -143,6 +167,12 @@ public sealed class QuantAnalysisEngine
         if (metrics.PayoutRatio is not null) reasons.Add($"Payout ratio {metrics.PayoutRatio:F1}%.");
         if (metrics.FcfPayoutRatio is not null) reasons.Add($"FCF payout {metrics.FcfPayoutRatio:F1}%.");
         if (metrics.EpsCagr5Y is not null) reasons.Add($"EPS CAGR 5Y {metrics.EpsCagr5Y:F1}%.");
+        if (fairValue.Range.Base is not null)
+            reasons.Add($"Fair value base {fairValue.Range.Base.Value:F2}; range {fairValue.Range.Conservative:F2}-{fairValue.Range.Optimistic:F2}.");
+        else
+            reasons.Add("Fair value unavailable: insufficient valuation baseline data.");
+        if (marginOfSafety is not null)
+            reasons.Add($"Margin of safety vs conservative fair value {marginOfSafety.Value:P1}.");
         reasons.Add($"Risk score {riskScore:F1}/15.");
         return reasons;
     }
