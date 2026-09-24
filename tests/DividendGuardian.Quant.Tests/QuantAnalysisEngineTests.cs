@@ -47,10 +47,10 @@ public sealed class QuantAnalysisEngineTests
         // PE fair value = 12 * (110 / 9) = 146.666...
         // FCF fair value converges to the same value with this fixture.
         // Median base = 146.666...; default range = 132-161.333...
-        Assert.Equal(132m, result.FairValue.Conservative, 8);
-        Assert.Equal(146.6666666666666666666666666666667m, result.FairValue.Base, 8);
-        Assert.Equal(161.3333333333333333333333333333333m, result.FairValue.Optimistic, 8);
-        Assert.Equal(1m - 100m / 132m, result.MarginOfSafety, 8);
+        Assert.True(Math.Abs(result.FairValue.Conservative!.Value - 132m) < 0.00000001m);
+        Assert.True(Math.Abs(result.FairValue.Base!.Value - 146.6666666666666666666666666666667m) < 0.00000001m);
+        Assert.True(Math.Abs(result.FairValue.Optimistic!.Value - 161.3333333333333333333333333333333m) < 0.00000001m);
+        Assert.True(Math.Abs(result.MarginOfSafety!.Value - (1m - 100m / 132m)) < 0.00000001m);
 
         Assert.Contains(result.Reasons, x => x.Contains("Fair value base 146.67"));
         Assert.Contains(result.Reasons, x => x.Contains("Margin of safety"));
