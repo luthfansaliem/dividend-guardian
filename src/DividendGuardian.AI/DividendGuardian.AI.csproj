@@ -1,3 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup><ProjectReference Include="../DividendGuardian.Domain/DividendGuardian.Domain.csproj" /></ItemGroup>
+  <PropertyGroup><RootNamespace>DividendGuardian.AI</RootNamespace></PropertyGroup>
+  <ItemGroup><ProjectReference Include="..\DividendGuardian.Domain\DividendGuardian.Domain.csproj" /></ItemGroup>
 </Project>
