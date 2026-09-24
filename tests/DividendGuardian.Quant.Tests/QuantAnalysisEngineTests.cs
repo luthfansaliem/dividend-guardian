@@ -52,6 +52,7 @@ public sealed class QuantAnalysisEngineTests
         Assert.True(Math.Abs(result.FairValue.Optimistic!.Value - 161.3333333333333333333333333333333m) < 0.00000001m);
         Assert.True(Math.Abs(result.MarginOfSafety!.Value - (1m - 100m / 132m)) < 0.00000001m);
         Assert.Equal("STRONG_ACCUMULATE", result.BuyZone.Status);
+        Assert.Equal("READY", result.DataQuality);
         Assert.Equal(result.MarginOfSafety, result.BuyZone.MarginOfSafety);
 
         Assert.Contains(result.Reasons, x => x.Contains("Fair value base 146.67"));
@@ -127,5 +128,36 @@ public sealed class QuantAnalysisEngineTests
         Assert.Null(result.FairValue.Base);
         Assert.Null(result.FairValue.Optimistic);
         Assert.Null(result.MarginOfSafety);
+        Assert.Equal("LIMITED", result.DataQuality);
+    }
+
+    [Fact]
+    public void Analyze_ClassifiesPartialQuality_WhenHistoryExistsButOneValuationBaselineIsMissing()
+    {
+        var input = new QuantAnalysisInput(
+            "TEST", 100m,
+            new[]
+            {
+                new AnnualFundamentalPoint(2023, 8m, 800m, 1000m, 100),
+                new AnnualFundamentalPoint(2024, 9m, 900m, 1100m, 100),
+                new AnnualFundamentalPoint(2025, 10m, 1000m, 1200m, 100)
+            },
+            new[]
+            {
+                new AnnualDividendPoint(2023, 2m),
+                new AnnualDividendPoint(2024, 2m),
+                new AnnualDividendPoint(2025, 3m)
+            },
+            new[]
+            {
+                new AnnualPricePoint(2023, 100m),
+                new AnnualPricePoint(2024, 110m),
+                new AnnualPricePoint(2025, 120m)
+            },
+            false);
+
+        var result = new QuantAnalysisEngine().Analyze(input);
+
+        Assert.Equal("READY", result.DataQuality);
     }
 }
