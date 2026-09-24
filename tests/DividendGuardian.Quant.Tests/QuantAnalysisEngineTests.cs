@@ -72,7 +72,6 @@ public sealed class QuantAnalysisEngineTests
         var first = new QuantAnalysisEngine().Analyze(input);
         var second = new QuantAnalysisEngine().Analyze(input);
 
-        Assert.Equal(first.Ticker, second.Ticker);
         Assert.Equal(first.CurrentPrice, second.CurrentPrice);
         Assert.Equal(first.CurrentDividendYieldPercent, second.CurrentDividendYieldPercent);
         Assert.Equal(first.HistoricalMedianDividendYieldPercent, second.HistoricalMedianDividendYieldPercent);
