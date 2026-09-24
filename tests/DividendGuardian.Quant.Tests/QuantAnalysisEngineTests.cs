@@ -97,7 +97,12 @@ public sealed class QuantAnalysisEngineTests
         Assert.Equal(first.Metrics, second.Metrics);
         Assert.Equal(first.FairValue, second.FairValue);
         Assert.Equal(first.MarginOfSafety, second.MarginOfSafety);
-        Assert.Equal(first.BuyZone, second.BuyZone);
+        Assert.Equal(first.BuyZone.ConservativeFairValue, second.BuyZone.ConservativeFairValue);
+        Assert.Equal(first.BuyZone.BaseFairValue, second.BuyZone.BaseFairValue);
+        Assert.Equal(first.BuyZone.OptimisticFairValue, second.BuyZone.OptimisticFairValue);
+        Assert.Equal(first.BuyZone.MarginOfSafety, second.BuyZone.MarginOfSafety);
+        Assert.Equal(first.BuyZone.Status, second.BuyZone.Status);
+        Assert.Equal(first.BuyZone.Reasons, second.BuyZone.Reasons);
         Assert.Equal(first.Reasons, second.Reasons);
     }
 
