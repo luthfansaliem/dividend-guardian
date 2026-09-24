@@ -4,7 +4,9 @@ public sealed record AnnualFundamentalPoint(
     int Year,
     decimal Eps,
     decimal FreeCashFlow,
-    decimal NetIncome);
+    decimal NetIncome,
+    long SharesOutstanding,
+    decimal Debt = 0m);
 
 public sealed record AnnualDividendPoint(
     int Year,
@@ -31,12 +33,12 @@ public sealed class FundamentalMetricsEngine
         var latest = orderedFundamentals.LastOrDefault();
         var latestDividend = orderedDividends.LastOrDefault();
 
-        var payout = latest is not null && latest.NetIncome > 0 && latestDividend is not null
-            ? latestDividend.Dps * SafeShares(latest) / latest.NetIncome
+        var payout = latest is not null && latest.NetIncome > 0 && latest.SharesOutstanding > 0 && latestDividend is not null
+            ? latestDividend.Dps * latest.SharesOutstanding / latest.NetIncome
             : null;
 
-        var fcfPayout = latest is not null && latest.FreeCashFlow > 0 && latestDividend is not null
-            ? latestDividend.Dps * SafeShares(latest) / latest.FreeCashFlow
+        var fcfPayout = latest is not null && latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0 && latestDividend is not null
+            ? latestDividend.Dps * latest.SharesOutstanding / latest.FreeCashFlow
             : null;
 
         var eps3 = CagrFromYears(orderedFundamentals.Select(x => (x.Year, x.Eps)), 3);
@@ -55,10 +57,6 @@ public sealed class FundamentalMetricsEngine
             stability,
             consistency);
     }
-
-    // Used by the engine only as a neutral fallback when a provider does not expose shares.
-    // For payout ratios, production ingestion should prefer a direct dividend-per-share / EPS calculation.
-    private static decimal SafeShares(AnnualFundamentalPoint _) => 1m;
 
     public static decimal? Cagr(decimal start, decimal end, int years)
     {
