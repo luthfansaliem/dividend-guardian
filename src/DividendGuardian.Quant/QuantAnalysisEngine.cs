@@ -63,7 +63,9 @@ public sealed class QuantAnalysisEngine
                 (d, p) => d.Dps / p.Close * 100m)
             .Where(x => x > 0));
 
-        var currentPe = latest.Eps > 0 ? input.CurrentPrice / latest.Eps : null;
+        decimal? currentPe = latest.Eps > 0
+            ? input.CurrentPrice / latest.Eps
+            : null;
 
         var historicalPe = Median(
             fundamentals.Join(
@@ -73,7 +75,7 @@ public sealed class QuantAnalysisEngine
                 (f, p) => f.Eps > 0 ? p.Close / f.Eps : 0m)
             .Where(x => x > 0));
 
-        var currentFcfYield = latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
+        decimal? currentFcfYield = latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
             ? latest.FreeCashFlow / (input.CurrentPrice * latest.SharesOutstanding) * 100m
             : null;
 
