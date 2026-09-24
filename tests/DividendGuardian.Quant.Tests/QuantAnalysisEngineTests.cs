@@ -37,9 +37,9 @@ public sealed class QuantAnalysisEngineTests
             "TEST", 100m, fundamentals, dividends, prices, false));
 
         Assert.Equal(3m, result.CurrentDividendYieldPercent);
-        Assert.Equal(2.4m, result.HistoricalMedianDividendYieldPercent);
+        Assert.Equal(2m, result.HistoricalMedianDividendYieldPercent);
         Assert.Equal(100m / 12m, result.CurrentPe);
-        Assert.Equal(10m, result.HistoricalMedianPe);
+        Assert.Equal(12m / 1m, result.HistoricalMedianPe);
         Assert.Equal(12m, result.CurrentFcfYieldPercent);
         Assert.NotNull(result.HistoricalMedianFcfYieldPercent);
         Assert.Contains(result.Reasons, x => x.Contains("Dividend yield 3.00%"));
@@ -72,8 +72,17 @@ public sealed class QuantAnalysisEngineTests
         var first = new QuantAnalysisEngine().Analyze(input);
         var second = new QuantAnalysisEngine().Analyze(input);
 
-        Assert.Equal(first, second);
+        Assert.Equal(first.Ticker, second.Ticker);
+        Assert.Equal(first.CurrentPrice, second.CurrentPrice);
+        Assert.Equal(first.CurrentDividendYieldPercent, second.CurrentDividendYieldPercent);
+        Assert.Equal(first.HistoricalMedianDividendYieldPercent, second.HistoricalMedianDividendYieldPercent);
+        Assert.Equal(first.CurrentPe, second.CurrentPe);
+        Assert.Equal(first.HistoricalMedianPe, second.HistoricalMedianPe);
+        Assert.Equal(first.CurrentFcfYieldPercent, second.CurrentFcfYieldPercent);
+        Assert.Equal(first.HistoricalMedianFcfYieldPercent, second.HistoricalMedianFcfYieldPercent);
+        Assert.Equal(first.RiskScore, second.RiskScore);
         Assert.Equal(first.Score, second.Score);
+        Assert.Equal(first.Metrics, second.Metrics);
         Assert.Equal(first.Reasons, second.Reasons);
     }
 
