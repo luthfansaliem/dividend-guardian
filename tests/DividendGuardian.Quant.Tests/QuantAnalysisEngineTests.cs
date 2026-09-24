@@ -43,14 +43,16 @@ public sealed class QuantAnalysisEngineTests
         Assert.Equal(12m, result.CurrentFcfYieldPercent);
         Assert.NotNull(result.HistoricalMedianFcfYieldPercent);
 
-        // Fair value methods: dividend = 150, PE = 120, FCF = 100.
-        // Median base = 120; default range = 108-132.
-        Assert.Equal(108m, result.FairValue.Conservative);
-        Assert.Equal(120m, result.FairValue.Base);
-        Assert.Equal(132m, result.FairValue.Optimistic);
-        Assert.Equal(0.0740740740740740740740740741m, result.MarginOfSafety);
+        // Dividend fair value = 150.
+        // PE fair value = 12 * (110 / 9) = 146.666...
+        // FCF fair value converges to the same value with this fixture.
+        // Median base = 146.666...; default range = 132-161.333...
+        Assert.Equal(132m, result.FairValue.Conservative, 8);
+        Assert.Equal(146.6666666666666666666666666666667m, result.FairValue.Base, 8);
+        Assert.Equal(161.3333333333333333333333333333333m, result.FairValue.Optimistic, 8);
+        Assert.Equal(1m - 100m / 132m, result.MarginOfSafety, 8);
 
-        Assert.Contains(result.Reasons, x => x.Contains("Fair value base 120.00"));
+        Assert.Contains(result.Reasons, x => x.Contains("Fair value base 146.67"));
         Assert.Contains(result.Reasons, x => x.Contains("Margin of safety"));
     }
 
