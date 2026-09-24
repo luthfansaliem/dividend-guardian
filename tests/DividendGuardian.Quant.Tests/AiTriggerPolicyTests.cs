@@ -36,11 +36,26 @@ public sealed class AiTriggerPolicyTests
     private static QuantAnalysisResult CreateQuant(string status, decimal price, decimal score)
     {
         var zone = new BuyZone(100m, 110m, 120m, 0m, status, Array.Empty<string>());
-        var qs = new QuantScore("TEST", 10m, 20m, 15m, 20m, 10m, score, AnalysisStatus.Watch, Array.Empty<string>());
+        var qs = new QuantScore(
+            "TEST",
+            10m,
+            20m,
+            15m,
+            20m,
+            10m,
+            score,
+            AnalysisStatus.Watch);
+
         return new QuantAnalysisResult(
             qs,
             new DividendQualityMetrics(null, null, null, null, null, 0, 0),
-            price, 3m, 2m, 10m, 11m, 12m, 10m, 10m,
+            price,
+            3m,
+            2m,
+            10m,
+            11m,
+            12m,
+            10m,
             10m,
             new FairValueRange(100m, 110m, 120m),
             0m,
