@@ -5,7 +5,7 @@ namespace DividendGuardian.Quant.Tests;
 public sealed class QuantAnalysisEngineTests
 {
     [Fact]
-    public void Analyze_ComputesYieldPeAndFcfYieldAgainstHistoricalBaselines()
+    public void Analyze_ComputesYieldPeFcfAndFairValueAgainstHistoricalBaselines()
     {
         var engine = new QuantAnalysisEngine();
         var fundamentals = new[]
@@ -42,8 +42,16 @@ public sealed class QuantAnalysisEngineTests
         Assert.Equal(110m / 9m, result.HistoricalMedianPe);
         Assert.Equal(12m, result.CurrentFcfYieldPercent);
         Assert.NotNull(result.HistoricalMedianFcfYieldPercent);
-        Assert.Contains(result.Reasons, x => x.Contains("Dividend yield 3.00%"));
-        Assert.Contains(result.Reasons, x => x.Contains("PE 8.33x"));
+
+        // Fair value methods: dividend = 150, PE = 120, FCF = 100.
+        // Median base = 120; default range = 108-132.
+        Assert.Equal(108m, result.FairValue.Conservative);
+        Assert.Equal(120m, result.FairValue.Base);
+        Assert.Equal(132m, result.FairValue.Optimistic);
+        Assert.Equal(0.0740740740740740740740740741m, result.MarginOfSafety);
+
+        Assert.Contains(result.Reasons, x => x.Contains("Fair value base 120.00"));
+        Assert.Contains(result.Reasons, x => x.Contains("Margin of safety"));
     }
 
     [Fact]
@@ -82,11 +90,13 @@ public sealed class QuantAnalysisEngineTests
         Assert.Equal(first.RiskScore, second.RiskScore);
         Assert.Equal(first.Score, second.Score);
         Assert.Equal(first.Metrics, second.Metrics);
+        Assert.Equal(first.FairValue, second.FairValue);
+        Assert.Equal(first.MarginOfSafety, second.MarginOfSafety);
         Assert.Equal(first.Reasons, second.Reasons);
     }
 
     [Fact]
-    public void Analyze_DoesNotInventMissingHistoricalBaselines()
+    public void Analyze_DoesNotInventMissingHistoricalBaselinesOrFairValue()
     {
         var input = new QuantAnalysisInput(
             "TEST",
@@ -108,5 +118,9 @@ public sealed class QuantAnalysisEngineTests
         Assert.Null(result.HistoricalMedianPe);
         Assert.Null(result.HistoricalMedianFcfYieldPercent);
         Assert.Equal(3m, result.CurrentDividendYieldPercent);
+        Assert.Null(result.FairValue.Conservative);
+        Assert.Null(result.FairValue.Base);
+        Assert.Null(result.FairValue.Optimistic);
+        Assert.Null(result.MarginOfSafety);
     }
 }
