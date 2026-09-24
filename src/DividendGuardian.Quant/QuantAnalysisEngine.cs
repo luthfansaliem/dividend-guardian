@@ -26,7 +26,8 @@ public sealed record QuantAnalysisResult(
     FairValueRange FairValue,
     decimal? MarginOfSafety,
     BuyZone BuyZone,
-    IReadOnlyList<string> Reasons);
+    IReadOnlyList<string> Reasons,
+    string DataQuality);
 
 public sealed class QuantAnalysisEngine
 {
@@ -118,13 +119,34 @@ public sealed class QuantAnalysisEngine
             fairValue.Range.Optimistic,
             score.TotalScore);
 
+        var dataQuality = DetermineDataQuality(fundamentals, dividends, prices, historicalYield, historicalPe, historicalFcfYield, fairValue);
         var reasons = BuildReasons(currentYield, historicalYield, currentPe, historicalPe,
             currentFcfYield, metrics, riskScore, fairValue, marginOfSafety);
+        reasons = reasons.Append($"Data quality {dataQuality}.").ToArray();
 
         return new QuantAnalysisResult(
             score, metrics, input.CurrentPrice, currentYield, historicalYield,
             currentPe, historicalPe, currentFcfYield, historicalFcfYield, riskScore,
-            fairValue.Range, marginOfSafety, buyZone, reasons);
+            fairValue.Range, marginOfSafety, buyZone, reasons, dataQuality);
+    }
+
+    private static string DetermineDataQuality(
+        IReadOnlyList<AnnualFundamentalPoint> fundamentals,
+        IReadOnlyList<AnnualDividendPoint> dividends,
+        IReadOnlyList<AnnualPricePoint> prices,
+        decimal? historicalYield,
+        decimal? historicalPe,
+        decimal? historicalFcfYield,
+        FairValueResult fairValue)
+    {
+        if (fundamentals.Count < 3 || dividends.Count < 3 || prices.Count < 3)
+            return "LIMITED";
+
+        if (historicalYield is null || historicalPe is null || historicalFcfYield is null ||
+            fairValue.Range.Base is null)
+            return "PARTIAL";
+
+        return "READY";
     }
 
     private static decimal ScorePe(decimal? current, decimal? historical)
