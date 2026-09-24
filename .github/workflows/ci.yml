@@ -15,5 +15,6 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - run: dotnet restore DividendGuardian.sln
+      - run: dotnet restore tests/DividendGuardian.Quant.Tests/DividendGuardian.Quant.Tests.csproj
       - run: dotnet build DividendGuardian.sln --configuration Release --no-restore
       - run: dotnet test DividendGuardian.sln --configuration Release --no-build
