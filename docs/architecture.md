@@ -1,15 +1,17 @@
 # Dividend Guardian v1 Architecture
 
-Market Data -> .NET Worker -> PostgreSQL/Supabase -> Quant Engine -> Fair Value -> AI Analyst -> Decision Engine -> Telegram.
+Market Data -> Worker -> Supabase PostgreSQL -> Quant Engine -> AI Analyst -> Decision Engine -> Telegram.
 
-v1 deliberately excludes automatic broker orders, broker credentials, ML training and intraday trading.
+## Project boundaries
+- Domain: immutable investment contracts.
+- Quant: deterministic scoring and fair-value primitives.
+- Infrastructure: PostgreSQL/Supabase access.
+- AI: qualitative analysis; never overrides quant score.
+- Notification: Telegram transport.
+- Worker: scheduling and orchestration.
 
-Components:
-- Domain: models and statuses.
-- Quant: deterministic scoring and valuation.
-- Infrastructure: PostgreSQL and data adapters.
-- AI: qualitative analysis.
-- Notification: Telegram.
-- Worker: orchestration and scheduling.
+## Secrets
+Use environment variables. Never commit API keys, tokens, broker credentials or OTPs.
 
-Data flow must remain auditable: raw data -> calculated metrics -> score -> decision -> AI explanation -> alert.
+## v1 safety
+No broker integration and no automatic order execution.
