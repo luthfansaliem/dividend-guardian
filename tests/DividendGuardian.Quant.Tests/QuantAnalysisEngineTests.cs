@@ -138,9 +138,9 @@ public sealed class QuantAnalysisEngineTests
             "TEST", 100m,
             new[]
             {
-                new AnnualFundamentalPoint(2023, 8m, 800m, 1000m, 100),
-                new AnnualFundamentalPoint(2024, 9m, 900m, 1100m, 100),
-                new AnnualFundamentalPoint(2025, 10m, 1000m, 1200m, 100)
+                new AnnualFundamentalPoint(2023, 8m, 0m, 1000m, 100),
+                new AnnualFundamentalPoint(2024, 9m, 0m, 1100m, 100),
+                new AnnualFundamentalPoint(2025, 10m, 0m, 1200m, 100)
             },
             new[]
             {
@@ -158,6 +158,6 @@ public sealed class QuantAnalysisEngineTests
 
         var result = new QuantAnalysisEngine().Analyze(input);
 
-        Assert.Equal("READY", result.DataQuality);
+        Assert.Equal("PARTIAL", result.DataQuality);
     }
 }
