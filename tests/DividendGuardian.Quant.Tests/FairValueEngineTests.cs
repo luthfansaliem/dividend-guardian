@@ -42,7 +42,8 @@ public sealed class FairValueEngineTests
             HistoricalMedianFcfYieldPercent: 5m));
 
         // Method values: 200, 120, 160. Median = 160.
-        Assert.Equal(120m, result.Range.Conservative);
+        // Default range multipliers are 0.90x and 1.10x.
+        Assert.Equal(144m, result.Range.Conservative);
         Assert.Equal(160m, result.Range.Base);
         Assert.Equal(176m, result.Range.Optimistic);
     }
