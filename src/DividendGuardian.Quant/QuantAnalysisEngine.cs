@@ -25,6 +25,7 @@ public sealed record QuantAnalysisResult(
     decimal RiskScore,
     FairValueRange FairValue,
     decimal? MarginOfSafety,
+    BuyZone BuyZone,
     IReadOnlyList<string> Reasons);
 
 public sealed class QuantAnalysisEngine
@@ -32,6 +33,7 @@ public sealed class QuantAnalysisEngine
     private readonly FundamentalMetricsEngine _metrics = new();
     private readonly QuantScoringEngine _scoring = new();
     private readonly FairValueEngine _fairValue = new();
+    private readonly BuyZoneEngine _buyZone = new();
 
     public QuantAnalysisResult Analyze(QuantAnalysisInput input)
     {
@@ -109,13 +111,20 @@ public sealed class QuantAnalysisEngine
         var marginOfSafety = FairValueEngine.MarginOfSafety(
             input.CurrentPrice, fairValue.Range.Conservative);
 
+        var buyZone = _buyZone.Evaluate(
+            input.CurrentPrice,
+            fairValue.Range.Conservative,
+            fairValue.Range.Base,
+            fairValue.Range.Optimistic,
+            score.TotalScore);
+
         var reasons = BuildReasons(currentYield, historicalYield, currentPe, historicalPe,
             currentFcfYield, metrics, riskScore, fairValue, marginOfSafety);
 
         return new QuantAnalysisResult(
             score, metrics, input.CurrentPrice, currentYield, historicalYield,
             currentPe, historicalPe, currentFcfYield, historicalFcfYield, riskScore,
-            fairValue.Range, marginOfSafety, reasons);
+            fairValue.Range, marginOfSafety, buyZone, reasons);
     }
 
     private static decimal ScorePe(decimal? current, decimal? historical)
