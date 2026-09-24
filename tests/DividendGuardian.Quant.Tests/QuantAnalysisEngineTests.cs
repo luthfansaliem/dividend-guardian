@@ -51,6 +51,8 @@ public sealed class QuantAnalysisEngineTests
         Assert.True(Math.Abs(result.FairValue.Base!.Value - 146.6666666666666666666666666666667m) < 0.00000001m);
         Assert.True(Math.Abs(result.FairValue.Optimistic!.Value - 161.3333333333333333333333333333333m) < 0.00000001m);
         Assert.True(Math.Abs(result.MarginOfSafety!.Value - (1m - 100m / 132m)) < 0.00000001m);
+        Assert.Equal("STRONG_ACCUMULATE", result.BuyZone.Status);
+        Assert.Equal(result.MarginOfSafety, result.BuyZone.MarginOfSafety);
 
         Assert.Contains(result.Reasons, x => x.Contains("Fair value base 146.67"));
         Assert.Contains(result.Reasons, x => x.Contains("Margin of safety"));
@@ -94,6 +96,7 @@ public sealed class QuantAnalysisEngineTests
         Assert.Equal(first.Metrics, second.Metrics);
         Assert.Equal(first.FairValue, second.FairValue);
         Assert.Equal(first.MarginOfSafety, second.MarginOfSafety);
+        Assert.Equal(first.BuyZone, second.BuyZone);
         Assert.Equal(first.Reasons, second.Reasons);
     }
 
