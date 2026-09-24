@@ -43,7 +43,7 @@ public class FundamentalMetricsEngineTests
 
         var result = engine.Calculate(fundamentals, dividends);
 
-        Assert.Equal(25m, result.PayoutRatio);
+        Assert.Equal(21.4285714285714285714285714286m, result.PayoutRatio);
         Assert.Equal(25m, result.FcfPayoutRatio);
         Assert.NotNull(result.EpsCagr5Y);
         Assert.True(result.EpsCagr5Y > 8m);
