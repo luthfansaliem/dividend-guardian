@@ -11,6 +11,15 @@ builder.Services.Configure<AiOptions>(o=>{
     o.Model=builder.Configuration["OPENAI_MODEL"]??"gpt-5.6-luna";
 });
 builder.Services.Configure<WorkerOptions>(builder.Configuration.GetSection("Worker"));
+builder.Services.Configure<FundamentalDataOptions>(o=>{
+    o.Provider=builder.Configuration["FUNDAMENTALS_PROVIDER"]??"none";
+    o.ApiKey=builder.Configuration["TWELVE_DATA_API_KEY"]??"";
+    o.BaseUrl=builder.Configuration["FUNDAMENTALS_BASE_URL"]??"https://api.twelvedata.com";
+    o.MicCode=builder.Configuration["FUNDAMENTALS_MIC"]??"XIDX";
+    o.LookbackYears=int.TryParse(builder.Configuration["FUNDAMENTALS_LOOKBACK_YEARS"],out var years)?years:6;
+    o.OutputSize=int.TryParse(builder.Configuration["FUNDAMENTALS_OUTPUT_SIZE"],out var size)?size:6;
+    o.RequestDelayMs=int.TryParse(builder.Configuration["FUNDAMENTALS_REQUEST_DELAY_MS"],out var delay)?delay:500;
+});
 builder.Services.Configure<MarketDataOptions>(o=>{
     o.Provider=builder.Configuration["MARKET_DATA_PROVIDER"]??"none";
     o.ApiKey=builder.Configuration["TWELVE_DATA_API_KEY"]??"";
@@ -41,6 +50,15 @@ builder.Services.AddSingleton<IMarketDataProvider>(sp=>{
     return options.Provider.Equals("twelvedata",StringComparison.OrdinalIgnoreCase)
         ? sp.GetRequiredService<TwelveDataMarketDataProvider>()
         : new NotConfiguredMarketDataProvider();
+});
+builder.Services.AddSingleton<FundamentalDataRepository>();
+builder.Services.AddSingleton<FundamentalCollector>();
+builder.Services.AddHttpClient<TwelveDataFundamentalDataProvider>();
+builder.Services.AddSingleton<IFundamentalDataProvider>(sp=>{
+    var options=sp.GetRequiredService<IOptions<FundamentalDataOptions>>().Value;
+    return options.Provider.Equals("twelvedata",StringComparison.OrdinalIgnoreCase)
+        ? sp.GetRequiredService<TwelveDataFundamentalDataProvider>()
+        : new NotConfiguredFundamentalDataProvider();
 });
 builder.Services.AddSingleton<FundamentalDataRepository>();
 builder.Services.AddSingleton<FundamentalCollector>();
