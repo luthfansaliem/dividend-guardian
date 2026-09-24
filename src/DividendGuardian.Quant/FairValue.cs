@@ -1,3 +1,5 @@
+using DividendGuardian.Domain;
+
 namespace DividendGuardian.Quant;
 
 public sealed record FairValueInput(
