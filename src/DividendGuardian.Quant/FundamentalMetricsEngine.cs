@@ -33,11 +33,11 @@ public sealed class FundamentalMetricsEngine
         var latest = orderedFundamentals.LastOrDefault();
         var latestDividend = orderedDividends.LastOrDefault();
 
-        var payout = latest is not null && latest.NetIncome > 0 && latest.SharesOutstanding > 0 && latestDividend is not null
+        decimal? payout = latest is not null && latest.NetIncome > 0 && latest.SharesOutstanding > 0 && latestDividend is not null
             ? latestDividend.Dps * latest.SharesOutstanding / latest.NetIncome
             : null;
 
-        var fcfPayout = latest is not null && latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0 && latestDividend is not null
+        decimal? fcfPayout = latest is not null && latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0 && latestDividend is not null
             ? latestDividend.Dps * latest.SharesOutstanding / latest.FreeCashFlow
             : null;
 
