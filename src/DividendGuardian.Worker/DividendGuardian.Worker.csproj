@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
-  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <PropertyGroup><OutputType>Exe</OutputType><RootNamespace>DividendGuardian.Worker</RootNamespace></PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../DividendGuardian.Domain/DividendGuardian.Domain.csproj" />
-    <ProjectReference Include="../DividendGuardian.Infrastructure/DividendGuardian.Infrastructure.csproj" />
-    <ProjectReference Include="../DividendGuardian.Quant/DividendGuardian.Quant.csproj" />
-    <ProjectReference Include="../DividendGuardian.AI/DividendGuardian.AI.csproj" />
-    <ProjectReference Include="../DividendGuardian.Notification/DividendGuardian.Notification.csproj" />
+    <ProjectReference Include="..\DividendGuardian.Domain\DividendGuardian.Domain.csproj" />
+    <ProjectReference Include="..\DividendGuardian.Infrastructure\DividendGuardian.Infrastructure.csproj" />
+    <ProjectReference Include="..\DividendGuardian.Quant\DividendGuardian.Quant.csproj" />
+    <ProjectReference Include="..\DividendGuardian.AI\DividendGuardian.AI.csproj" />
+    <ProjectReference Include="..\DividendGuardian.Notification\DividendGuardian.Notification.csproj" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
   </ItemGroup>
 </Project>
