@@ -34,11 +34,11 @@ public sealed class FundamentalMetricsEngine
         var latestDividend = orderedDividends.LastOrDefault();
 
         decimal? payout = latest is not null && latest.NetIncome > 0 && latest.SharesOutstanding > 0 && latestDividend is not null
-            ? latestDividend.Dps * latest.SharesOutstanding / latest.NetIncome
+            ? (decimal?)(latestDividend.Dps * latest.SharesOutstanding / latest.NetIncome)
             : null;
 
         decimal? fcfPayout = latest is not null && latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0 && latestDividend is not null
-            ? latestDividend.Dps * latest.SharesOutstanding / latest.FreeCashFlow
+            ? (decimal?)(latestDividend.Dps * latest.SharesOutstanding / latest.FreeCashFlow)
             : null;
 
         var eps3 = CagrFromYears(orderedFundamentals.Select(x => (x.Year, x.Eps)), 3);
