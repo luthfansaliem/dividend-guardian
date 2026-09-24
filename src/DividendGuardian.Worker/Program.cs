@@ -11,9 +11,25 @@ builder.Services.Configure<AiOptions>(o=>{
     o.Model=builder.Configuration["OPENAI_MODEL"]??"gpt-5.6-luna";
 });
 builder.Services.Configure<WorkerOptions>(builder.Configuration.GetSection("Worker"));
+builder.Services.Configure<MarketDataOptions>(o=>{
+    o.Provider=builder.Configuration["MARKET_DATA_PROVIDER"]??"none";
+    o.ApiKey=builder.Configuration["TWELVE_DATA_API_KEY"]??"";
+    o.BaseUrl=builder.Configuration["MARKET_DATA_BASE_URL"]??"https://api.twelvedata.com";
+    o.MicCode=builder.Configuration["MARKET_DATA_MIC"]??"XIDX";
+    o.LookbackDays=int.TryParse(builder.Configuration["MARKET_DATA_LOOKBACK_DAYS"],out var days)?days:14;
+});
 
 builder.Services.AddSingleton(sp=>new Database(sp.GetRequiredService<IOptions<DatabaseOptions>>().Value));
 builder.Services.AddSingleton<StockRepository>();
+builder.Services.AddSingleton<MarketDataRepository>();
+builder.Services.AddSingleton<MarketDataCollector>();
+builder.Services.AddHttpClient<TwelveDataMarketDataProvider>();
+builder.Services.AddSingleton<IMarketDataProvider>(sp=>{
+    var options=sp.GetRequiredService<IOptions<MarketDataOptions>>().Value;
+    return options.Provider.Equals("twelvedata",StringComparison.OrdinalIgnoreCase)
+        ? sp.GetRequiredService<TwelveDataMarketDataProvider>()
+        : new NotConfiguredMarketDataProvider();
+});
 builder.Services.AddHttpClient<AiAnalyst>(c=>c.Timeout=TimeSpan.FromSeconds(60));
 builder.Services.AddHttpClient<TelegramNotifier>();
 builder.Services.AddHostedService<Worker>();
