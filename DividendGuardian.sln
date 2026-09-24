@@ -1,0 +1,47 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DividendGuardian.Worker", "src\DividendGuardian.Worker\DividendGuardian.Worker.csproj", "{A0D2B4C1-1111-4B1A-9001-000000000001}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DividendGuardian.Domain", "src\DividendGuardian.Domain\DividendGuardian.Domain.csproj", "{A0D2B4C1-1111-4B1A-9001-000000000002}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DividendGuardian.Infrastructure", "src\DividendGuardian.Infrastructure\DividendGuardian.Infrastructure.csproj", "{A0D2B4C1-1111-4B1A-9001-000000000003}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DividendGuardian.Quant", "src\DividendGuardian.Quant\DividendGuardian.Quant.csproj", "{A0D2B4C1-1111-4B1A-9001-000000000004}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DividendGuardian.AI", "src\DividendGuardian.AI\DividendGuardian.AI.csproj", "{A0D2B4C1-1111-4B1A-9001-000000000005}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DividendGuardian.Notification", "src\DividendGuardian.Notification\DividendGuardian.Notification.csproj", "{A0D2B4C1-1111-4B1A-9001-000000000006}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DividendGuardian.Quant.Tests", "tests\DividendGuardian.Quant.Tests\DividendGuardian.Quant.Tests.csproj", "{A0D2B4C1-1111-4B1A-9001-000000000007}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A0D2B4C1-1111-4B1A-9001-000000000001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000001}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000001}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000001}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000003}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000004}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000004}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000004}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000004}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000005}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000005}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0D2B4C1-1111-4B1A-9001-000000000007}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+	EndGlobalSection
+EndGlobal
