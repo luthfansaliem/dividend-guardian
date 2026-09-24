@@ -8,6 +8,7 @@ public sealed class Worker(
     Database database,
     MarketDataCollector marketData,
     FundamentalCollector fundamentals,
+    QuantAnalysisOrchestrator quantAnalysis,
     IOptions<WorkerOptions> options,
     IOptions<MarketDataOptions> marketOptions,
     IOptions<FundamentalDataOptions> fundamentalOptions) : BackgroundService
@@ -17,6 +18,7 @@ public sealed class Worker(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Dividend Guardian started. Environment={Environment}", options.Value.Environment);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -34,7 +36,8 @@ public sealed class Worker(
 
                 if (!fundamentalOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase) &&
                     (lastFundamentalRun is null ||
-                     DateTimeOffset.UtcNow - lastFundamentalRun.Value >= TimeSpan.FromDays(Math.Max(1, options.Value.FundamentalIntervalDays))))
+                     DateTimeOffset.UtcNow - lastFundamentalRun.Value >=
+                     TimeSpan.FromDays(Math.Max(1, options.Value.FundamentalIntervalDays))))
                 {
                     var to = DateOnly.FromDateTime(DateTime.UtcNow);
                     var from = to.AddYears(-Math.Max(1, fundamentalOptions.Value.LookbackYears));
@@ -43,12 +46,21 @@ public sealed class Worker(
                     logger.LogInformation("Fundamental data cycle complete. Rows written={Rows}", rows);
                 }
 
+                var analysisDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                var analysis = await quantAnalysis.AnalyzeWatchlistAsync(analysisDate, stoppingToken);
+                logger.LogInformation(
+                    "Quant analysis cycle complete. Success={Success}, Insufficient={Insufficient}, Failed={Failed}",
+                    analysis.Success, analysis.Insufficient, analysis.Failed);
+
                 if (marketOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase) &&
                     fundamentalOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase))
                     logger.LogWarning("No data providers are configured.");
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
-            catch (Exception ex) { logger.LogError(ex, "Scheduled cycle failed."); }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Scheduled cycle failed.");
+            }
 
             await Task.Delay(options.Value.Interval, stoppingToken);
         }
