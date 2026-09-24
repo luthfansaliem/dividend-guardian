@@ -1,5 +1,6 @@
-# BUILD 01 Status
+# Build Status
 
+## BUILD 01 — Foundation
 Implemented:
 - .NET 10 solution structure
 - Domain contracts
@@ -13,10 +14,32 @@ Implemented:
 - Initial database migration and watchlist seed
 - Quant unit tests
 
-Not yet live:
-- Market-data provider adapter
-- Fundamental/dividend ingestion
-- Fair-value aggregation
+## BUILD 02 — Market Data Engine
+Implemented:
+- EOD market-data provider abstraction
+- Twelve Data EOD adapter
+- OHLCV validation/normalization
+- Idempotent EOD upserts
+- Market-data ingestion audit table
+- Worker integration
+
+## BUILD 03 — Fundamentals & Dividend Engine
+Implemented:
+- Fundamental provider abstraction
+- Twelve Data annual income-statement adapter
+- Balance-sheet adapter
+- Cash-flow adapter
+- Dividend-history adapter
+- Fundamental/dividend upserts
+- Fundamental ingestion audit table
+- Weekly-by-default fundamental scheduling
+- Disabled-by-default cost guard
+
+## Not yet complete
+- Payout ratio and FCF payout calculation
+- EPS CAGR/dividend growth/stability engine
+- Valuation snapshot calculation
+- Fair-value aggregation and buy-zone integration
 - Event/trigger engine
 - Telegram command handling
 - Portfolio calculations
