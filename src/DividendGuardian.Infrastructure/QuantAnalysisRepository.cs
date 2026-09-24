@@ -37,6 +37,32 @@ public sealed class QuantAnalysisRepository(Database database)
             await command.ExecuteNonQueryAsync(ct);
         }
 
+        const string fairValueSql = """
+            insert into fair_values
+                (ticker, analysis_date, conservative_value, base_value, optimistic_value,
+                 margin_of_safety, model_version)
+            values
+                (@ticker, @date, @conservative, @base, @optimistic, @margin_of_safety, @model)
+            on conflict (ticker, analysis_date) do update set
+                conservative_value=excluded.conservative_value,
+                base_value=excluded.base_value,
+                optimistic_value=excluded.optimistic_value,
+                margin_of_safety=excluded.margin_of_safety,
+                model_version=excluded.model_version;
+            """;
+
+        await using (var command = new NpgsqlCommand(fairValueSql, connection, transaction))
+        {
+            command.Parameters.AddWithValue("ticker", result.Score.Ticker);
+            command.Parameters.AddWithValue("date", analysisDate);
+            command.Parameters.AddWithValue("conservative", (object?)result.FairValue.Conservative ?? DBNull.Value);
+            command.Parameters.AddWithValue("base", (object?)result.FairValue.Base ?? DBNull.Value);
+            command.Parameters.AddWithValue("optimistic", (object?)result.FairValue.Optimistic ?? DBNull.Value);
+            command.Parameters.AddWithValue("margin_of_safety", (object?)result.MarginOfSafety ?? DBNull.Value);
+            command.Parameters.AddWithValue("model", "DG-1.0");
+            await command.ExecuteNonQueryAsync(ct);
+        }
+
         const string scoreSql = """
             insert into quant_scores
                 (ticker, analysis_date, dividend_yield_score, sustainability_score,
