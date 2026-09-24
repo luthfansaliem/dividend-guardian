@@ -31,10 +31,6 @@ public sealed class Worker(
                     var rows = await marketData.CollectAsync(from, to, stoppingToken);
                     logger.LogInformation("Market data cycle complete. Rows written={Rows}", rows);
                 }
-                else
-                {
-                    logger.LogWarning("Market data provider is not configured. Set MARKET_DATA_PROVIDER.");
-                }
 
                 if (!fundamentalOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase) &&
                     (lastFundamentalRun is null ||
@@ -46,6 +42,10 @@ public sealed class Worker(
                     lastFundamentalRun = DateTimeOffset.UtcNow;
                     logger.LogInformation("Fundamental data cycle complete. Rows written={Rows}", rows);
                 }
+
+                if (marketOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase) &&
+                    fundamentalOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase))
+                    logger.LogWarning("No data providers are configured.");
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
             catch (Exception ex) { logger.LogError(ex, "Scheduled cycle failed."); }
