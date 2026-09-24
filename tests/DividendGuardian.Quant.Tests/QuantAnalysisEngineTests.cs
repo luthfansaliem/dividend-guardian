@@ -39,7 +39,7 @@ public sealed class QuantAnalysisEngineTests
         Assert.Equal(3m, result.CurrentDividendYieldPercent);
         Assert.Equal(2m, result.HistoricalMedianDividendYieldPercent);
         Assert.Equal(100m / 12m, result.CurrentPe);
-        Assert.Equal(12m / 1m, result.HistoricalMedianPe);
+        Assert.Equal(110m / 9m, result.HistoricalMedianPe);
         Assert.Equal(12m, result.CurrentFcfYieldPercent);
         Assert.NotNull(result.HistoricalMedianFcfYieldPercent);
         Assert.Contains(result.Reasons, x => x.Contains("Dividend yield 3.00%"));
