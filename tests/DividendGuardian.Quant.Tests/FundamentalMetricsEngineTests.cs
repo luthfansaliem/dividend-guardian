@@ -33,6 +33,7 @@ public class FundamentalMetricsEngineTests
         var engine = new FundamentalMetricsEngine();
         var fundamentals = new[]
         {
+            new AnnualFundamentalPoint(2020, 7, 700, 900, 100),
             new AnnualFundamentalPoint(2021, 8, 800, 1000, 100),
             new AnnualFundamentalPoint(2022, 9, 900, 1100, 100),
             new AnnualFundamentalPoint(2023, 10, 1000, 1200, 100),
