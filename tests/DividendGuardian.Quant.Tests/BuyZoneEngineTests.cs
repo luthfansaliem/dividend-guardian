@@ -11,7 +11,7 @@ public sealed class BuyZoneEngineTests
 
         Assert.Equal("STRONG_ACCUMULATE", result.Status);
         Assert.Equal(0.20m, result.MarginOfSafety);
-        Assert.Equal(4, result.Reasons.Count);
+        Assert.Equal(5, result.Reasons.Count);
     }
 
     [Fact]
@@ -59,6 +59,11 @@ public sealed class BuyZoneEngineTests
         var first = engine.Evaluate(82m, 100m, 110m, 120m, 82m);
         var second = engine.Evaluate(82m, 100m, 110m, 120m, 82m);
 
-        Assert.Equal(first, second);
+        Assert.Equal(first.ConservativeFairValue, second.ConservativeFairValue);
+        Assert.Equal(first.BaseFairValue, second.BaseFairValue);
+        Assert.Equal(first.OptimisticFairValue, second.OptimisticFairValue);
+        Assert.Equal(first.MarginOfSafety, second.MarginOfSafety);
+        Assert.Equal(first.Status, second.Status);
+        Assert.Equal(first.Reasons, second.Reasons);
     }
 }
