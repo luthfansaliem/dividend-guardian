@@ -83,6 +83,37 @@ public sealed class AiTriggerPolicy
         return triggers;
     }
 
+    public bool ShouldAnalyzeFromState(
+        QuantAnalysisResult current,
+        AiTriggerState? previous,
+        IReadOnlyCollection<AiTriggerEvent> externalTriggers,
+        DateTimeOffset? lastAnalysisAt = null,
+        DateTimeOffset? now = null,
+        TimeSpan? cooldown = null)
+    {
+        if (externalTriggers.Count > 0)
+            return IsOutsideCooldown(lastAnalysisAt, now, cooldown);
+
+        if (IsInsideCooldown(lastAnalysisAt, now, cooldown))
+            return false;
+
+        if (previous is null)
+            return current.BuyZone.Status is "STRONG_ACCUMULATE" or "ACCUMULATE";
+
+        if (current.BuyZone.Status is "STRONG_ACCUMULATE" or "ACCUMULATE" &&
+            previous.Status is not ("STRONG_ACCUMULATE" or "ACCUMULATE"))
+            return true;
+
+        var priceDrop = previous.CurrentPrice > 0
+            ? 1m - current.CurrentPrice / previous.CurrentPrice
+            : 0m;
+
+        if (priceDrop >= 0.05m)
+            return true;
+
+        return Math.Abs(current.Score.TotalScore - previous.TotalScore) >= 5m;
+    }
+
     private static bool IsInsideCooldown(
         DateTimeOffset? lastAnalysisAt,
         DateTimeOffset? now,
