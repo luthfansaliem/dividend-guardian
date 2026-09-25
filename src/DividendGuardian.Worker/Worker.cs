@@ -1,4 +1,5 @@
 using DividendGuardian.Infrastructure;
+using DividendGuardian.Notification;
 using Microsoft.Extensions.Options;
 
 namespace DividendGuardian.Worker;
