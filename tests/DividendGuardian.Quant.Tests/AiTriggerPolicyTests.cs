@@ -98,7 +98,7 @@ public sealed class AiTriggerPolicyTests
     {
         var policy = new AiTriggerPolicy();
         var previous = new AiTriggerState(100m, 60m, "WATCH");
-        var current = CreateQuant("ACCUMULATE", 100m, 75m);
+        var current = CreateQuant("ACCUMULATE", 100m, 60m);
         var occurredAt = new DateTimeOffset(2026, 9, 25, 8, 0, 0, TimeSpan.Zero);
 
         var triggers = policy.EvaluateTriggers(current, previous, occurredAt);
