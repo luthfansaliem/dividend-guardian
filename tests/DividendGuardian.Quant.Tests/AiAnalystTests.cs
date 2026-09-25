@@ -13,7 +13,7 @@ public sealed class AiAnalystTests
     {
         var handler = new StubHandler("""
         {
-          "output_text": "{"ticker":"ASII","verdict":"WATCH","why_accumulate":"Yield is above its historical baseline.","why_not_accumulate":"Data quality is partial.","key_risks":["Cyclicality"],"data_gaps":["Limited historical FCF"],"invalidation_triggers":["FCF payout deteriorates materially"],"data_quality":"PARTIAL","model":"gpt-test","prompt_version":"DG-AI-1.0"}"
+          "output_text": "{\"ticker\":\"ASII\",\"verdict\":\"WATCH\",\"why_accumulate\":\"Yield is above its historical baseline.\",\"why_not_accumulate\":\"Data quality is partial.\",\"key_risks\":[\"Cyclicality\"],\"data_gaps\":[\"Limited historical FCF\"],\"invalidation_triggers\":[\"FCF payout deteriorates materially\"],\"data_quality\":\"PARTIAL\",\"model\":\"gpt-test\",\"prompt_version\":\"DG-AI-1.0\"}"
         }
         """);
 
@@ -34,7 +34,7 @@ public sealed class AiAnalystTests
     {
         var handler = new StubHandler("""
         {
-          "output_text": "{"ticker":"TLKM","verdict":"WATCH","why_accumulate":"x","why_not_accumulate":"y","key_risks":[],"data_gaps":[],"invalidation_triggers":[],"data_quality":"READY","model":"gpt-test","prompt_version":"DG-AI-1.0"}"
+          "output_text": "{\"ticker\":\"TLKM\",\"verdict\":\"WATCH\",\"why_accumulate\":\"x\",\"why_not_accumulate\":\"y\",\"key_risks\":[],\"data_gaps\":[],\"invalidation_triggers\":[],\"data_quality\":\"READY\",\"model\":\"gpt-test\",\"prompt_version\":\"DG-AI-1.0\"}"
         }
         """);
 
@@ -49,7 +49,7 @@ public sealed class AiAnalystTests
     [Fact]
     public async Task AnalyzeAsync_ThrowsWhenApiFails()
     {
-        var handler = new StubHandler("{"error":"bad request"}", HttpStatusCode.BadRequest);
+        var handler = new StubHandler("""{"error":"bad request"}""", HttpStatusCode.BadRequest);
 
         var analyst = new AiAnalyst(
             new HttpClient(handler),
