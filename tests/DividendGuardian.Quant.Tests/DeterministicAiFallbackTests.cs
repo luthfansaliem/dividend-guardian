@@ -39,6 +39,6 @@ public sealed class DeterministicAiFallbackTests
         Assert.Equal("deterministic-fallback", result.Model);
         Assert.Contains("API timeout.", result.DataGaps);
         Assert.Contains("75.0/100", result.WhyAccumulate);
-        Assert.Contains("10.0%", result.WhyAccumulate);
+        Assert.Contains("margin of safety is", result.WhyAccumulate);
     }
 }
