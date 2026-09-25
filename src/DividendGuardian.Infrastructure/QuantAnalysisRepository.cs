@@ -115,6 +115,42 @@ public sealed class QuantAnalysisRepository(Database database)
         await transaction.CommitAsync(ct);
     }
 
+    public async Task<AiTriggerState?> GetPreviousTriggerStateAsync(
+        string ticker,
+        DateOnly analysisDate,
+        CancellationToken ct = default)
+    {
+        const string sql = """
+            select q.total_score, q.analysis_status, v.price
+            from quant_scores q
+            left join valuations v
+              on v.ticker = q.ticker
+             and v.valuation_date = q.analysis_date
+            where q.ticker = @ticker
+              and q.analysis_date < @date
+            order by q.analysis_date desc
+            limit 1;
+            """;
+
+        await using var connection = new NpgsqlConnection(database.ConnectionString);
+        await connection.OpenAsync(ct);
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("ticker", ticker);
+        command.Parameters.AddWithValue("date", analysisDate);
+
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        if (!await reader.ReadAsync(ct))
+            return null;
+
+        if (reader.IsDBNull(0) || reader.IsDBNull(1) || reader.IsDBNull(2))
+            return null;
+
+        return new AiTriggerState(
+            reader.GetFieldValue<decimal>(2),
+            reader.GetFieldValue<decimal>(0),
+            reader.GetString(1));
+    }
+
     public async Task RecordFailureAsync(
         string ticker,
         DateOnly analysisDate,
