@@ -1,10 +1,11 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
 namespace DividendGuardian.AI;
 
-public sealed class AiAnalyst : IAiAnalyst
+public sealed class AiAnalyst
 {
     private const string PromptVersion = "DG-AI-1.0";
     private readonly HttpClient _httpClient;
@@ -44,26 +45,12 @@ public sealed class AiAnalyst : IAiAnalyst
                 new
                 {
                     role = "system",
-                    content = new[]
-                    {
-                        new
-                        {
-                            type = "input_text",
-                            text = DividendGuardianAiPrompt.System
-                        }
-                    }
+                    content = new[] { new { type = "input_text", text = DividendGuardianAiPrompt.System } }
                 },
                 new
                 {
                     role = "user",
-                    content = new[]
-                    {
-                        new
-                        {
-                            type = "input_text",
-                            text = JsonSerializer.Serialize(analystInput, JsonOptions)
-                        }
-                    }
+                    content = new[] { new { type = "input_text", text = JsonSerializer.Serialize(analystInput, JsonOptions) } }
                 }
             },
             text = new
@@ -79,32 +66,9 @@ public sealed class AiAnalyst : IAiAnalyst
             store = false
         };
 
-        using var httpRequest = new HttpRequestMessage(
-            HttpMethod.Post,
-            "https://api.openai.com/v1/responses");
-
-        httpRequest.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", _options.ApiKey);
-        httpRequest.Content = new StringContent(
-            JsonSerializer.Serialize(body, JsonOptions),
-            Encoding.UTF8,
-            "application/json");
-
-        using var response = await _httpClient.SendAsync(
-            httpRequest,
-            HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken);
-
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-            throw new HttpRequestException(
-                $"OpenAI Responses API returned {(int)response.StatusCode}: {responseBody}");
-
+        var responseBody = await SendWithRetryAsync(body, cancellationToken);
         var outputText = ExtractOutputText(responseBody);
-        var result = JsonSerializer.Deserialize<AiAnalysisResponse>(
-            outputText,
-            JsonOptions);
+        var result = JsonSerializer.Deserialize<AiAnalysisResponse>(outputText, JsonOptions);
 
         if (result is null)
             throw new InvalidOperationException("OpenAI returned an empty AI analysis.");
@@ -114,11 +78,73 @@ public sealed class AiAnalyst : IAiAnalyst
         return result with
         {
             Model = string.IsNullOrWhiteSpace(result.Model) ? _options.Model : result.Model,
-            PromptVersion = string.IsNullOrWhiteSpace(result.PromptVersion)
-                ? PromptVersion
-                : result.PromptVersion
+            PromptVersion = string.IsNullOrWhiteSpace(result.PromptVersion) ? PromptVersion : result.PromptVersion
         };
     }
+
+    private async Task<string> SendWithRetryAsync(object body, CancellationToken cancellationToken)
+    {
+        var maxRetries = Math.Max(0, _options.MaxRetries);
+
+        for (var attempt = 0; ; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                using var httpRequest = new HttpRequestMessage(
+                    HttpMethod.Post,
+                    "https://api.openai.com/v1/responses");
+
+                httpRequest.Headers.Authorization =
+                    new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+                httpRequest.Content = new StringContent(
+                    JsonSerializer.Serialize(body, JsonOptions),
+                    Encoding.UTF8,
+                    "application/json");
+
+                using var response = await _httpClient.SendAsync(
+                    httpRequest,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
+
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                    return responseBody;
+
+                if (!IsTransient(response.StatusCode) || attempt >= maxRetries)
+                    throw new HttpRequestException(
+                        $"OpenAI Responses API returned {(int)response.StatusCode}: {responseBody}",
+                        null,
+                        response.StatusCode);
+
+                await DelayBeforeRetryAsync(attempt, cancellationToken);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < maxRetries)
+            {
+                await DelayBeforeRetryAsync(attempt, cancellationToken);
+            }
+            catch (HttpRequestException) when (attempt < maxRetries)
+            {
+                // Network failures are transient. HTTP status failures are handled above.
+                await DelayBeforeRetryAsync(attempt, cancellationToken);
+            }
+        }
+    }
+
+    private async Task DelayBeforeRetryAsync(int attempt, CancellationToken cancellationToken)
+    {
+        var baseDelay = Math.Max(0, _options.RetryDelayMs);
+        var multiplier = Math.Pow(2, attempt);
+        var delayMs = Math.Min(baseDelay * multiplier, 10_000);
+        if (delayMs > 0)
+            await Task.Delay(TimeSpan.FromMilliseconds(delayMs), cancellationToken);
+    }
+
+    private static bool IsTransient(HttpStatusCode statusCode) =>
+        statusCode == HttpStatusCode.TooManyRequests ||
+        (int)statusCode >= 500;
 
     private static string ExtractOutputText(string responseBody)
     {
@@ -179,37 +205,18 @@ public sealed class AiAnalyst : IAiAnalyst
             verdict = new { type = "string" },
             why_accumulate = new { type = "string" },
             why_not_accumulate = new { type = "string" },
-            key_risks = new
-            {
-                type = "array",
-                items = new { type = "string" }
-            },
-            data_gaps = new
-            {
-                type = "array",
-                items = new { type = "string" }
-            },
-            invalidation_triggers = new
-            {
-                type = "array",
-                items = new { type = "string" }
-            },
+            key_risks = new { type = "array", items = new { type = "string" } },
+            data_gaps = new { type = "array", items = new { type = "string" } },
+            invalidation_triggers = new { type = "array", items = new { type = "string" } },
             data_quality = new { type = "string" },
             model = new { type = "string" },
             prompt_version = new { type = "string" }
         },
         required = new[]
         {
-            "ticker",
-            "verdict",
-            "why_accumulate",
-            "why_not_accumulate",
-            "key_risks",
-            "data_gaps",
-            "invalidation_triggers",
-            "data_quality",
-            "model",
-            "prompt_version"
+            "ticker", "verdict", "why_accumulate", "why_not_accumulate",
+            "key_risks", "data_gaps", "invalidation_triggers",
+            "data_quality", "model", "prompt_version"
         }
     };
 }
