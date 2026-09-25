@@ -42,26 +42,12 @@ public sealed class AiAnalyst
             model = string.IsNullOrWhiteSpace(_options.Model) ? "gpt-5.6-luna" : _options.Model,
             input = new object[]
             {
-                new
-                {
-                    role = "system",
-                    content = new[] { new { type = "input_text", text = DividendGuardianAiPrompt.System } }
-                },
-                new
-                {
-                    role = "user",
-                    content = new[] { new { type = "input_text", text = JsonSerializer.Serialize(analystInput, JsonOptions) } }
-                }
+                new { role = "system", content = new[] { new { type = "input_text", text = DividendGuardianAiPrompt.System } } },
+                new { role = "user", content = new[] { new { type = "input_text", text = JsonSerializer.Serialize(analystInput, JsonOptions) } } }
             },
             text = new
             {
-                format = new
-                {
-                    type = "json_schema",
-                    name = "dividend_guardian_analysis",
-                    strict = true,
-                    schema = ResponseSchema
-                }
+                format = new { type = "json_schema", name = "dividend_guardian_analysis", strict = true, schema = ResponseSchema }
             },
             store = false
         };
@@ -92,16 +78,9 @@ public sealed class AiAnalyst
 
             try
             {
-                using var httpRequest = new HttpRequestMessage(
-                    HttpMethod.Post,
-                    "https://api.openai.com/v1/responses");
-
-                httpRequest.Headers.Authorization =
-                    new AuthenticationHeaderValue("Bearer", _options.ApiKey);
-                httpRequest.Content = new StringContent(
-                    JsonSerializer.Serialize(body, JsonOptions),
-                    Encoding.UTF8,
-                    "application/json");
+                using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
+                httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+                httpRequest.Content = new StringContent(JsonSerializer.Serialize(body, JsonOptions), Encoding.UTF8, "application/json");
 
                 using var response = await _httpClient.SendAsync(
                     httpRequest,
@@ -125,9 +104,8 @@ public sealed class AiAnalyst
             {
                 await DelayBeforeRetryAsync(attempt, cancellationToken);
             }
-            catch (HttpRequestException) when (attempt < maxRetries)
+            catch (HttpRequestException ex) when (ex.StatusCode is null && attempt < maxRetries)
             {
-                // Network failures are transient. HTTP status failures are handled above.
                 await DelayBeforeRetryAsync(attempt, cancellationToken);
             }
         }
@@ -136,15 +114,13 @@ public sealed class AiAnalyst
     private async Task DelayBeforeRetryAsync(int attempt, CancellationToken cancellationToken)
     {
         var baseDelay = Math.Max(0, _options.RetryDelayMs);
-        var multiplier = Math.Pow(2, attempt);
-        var delayMs = Math.Min(baseDelay * multiplier, 10_000);
+        var delayMs = Math.Min(baseDelay * Math.Pow(2, attempt), 10_000);
         if (delayMs > 0)
             await Task.Delay(TimeSpan.FromMilliseconds(delayMs), cancellationToken);
     }
 
     private static bool IsTransient(HttpStatusCode statusCode) =>
-        statusCode == HttpStatusCode.TooManyRequests ||
-        (int)statusCode >= 500;
+        statusCode == HttpStatusCode.TooManyRequests || (int)statusCode >= 500;
 
     private static string ExtractOutputText(string responseBody)
     {
@@ -155,16 +131,13 @@ public sealed class AiAnalyst
             !string.IsNullOrWhiteSpace(outputText.GetString()))
             return outputText.GetString()!;
 
-        if (!document.RootElement.TryGetProperty("output", out var output) ||
-            output.ValueKind != JsonValueKind.Array)
+        if (!document.RootElement.TryGetProperty("output", out var output) || output.ValueKind != JsonValueKind.Array)
             throw new InvalidOperationException("OpenAI response did not contain output text.");
 
         foreach (var item in output.EnumerateArray())
         {
-            if (!item.TryGetProperty("content", out var content) ||
-                content.ValueKind != JsonValueKind.Array)
+            if (!item.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
                 continue;
-
             foreach (var part in content.EnumerateArray())
             {
                 if (part.TryGetProperty("text", out var text) &&
