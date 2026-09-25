@@ -8,6 +8,7 @@ public sealed class AiAnalysisCycleOrchestrator(
     AiAnalysisOrchestrator orchestrator,
     AiTriggerPolicy triggerPolicy,
     AiAnalysisRepository repository,
+    QuantAnalysisRepository quantRepository,
     ILogger<AiAnalysisCycleOrchestrator> logger)
 {
     private static readonly TimeSpan Cooldown = TimeSpan.FromHours(24);
@@ -29,13 +30,23 @@ public sealed class AiAnalysisCycleOrchestrator(
             try
             {
                 var lastAnalysisAt = await repository.GetLatestAnalysisAtAsync(item.Ticker, ct);
+                var previous = await quantRepository.GetPreviousTriggerStateAsync(
+                    item.Ticker,
+                    analysisDate,
+                    ct);
+                var occurredAt = DateTimeOffset.UtcNow;
 
-                if (!triggerPolicy.ShouldAnalyze(
+                var triggers = triggerPolicy.EvaluateTriggers(
+                    item.Result,
+                    previous,
+                    occurredAt);
+
+                if (!triggerPolicy.ShouldAnalyzeFromState(
                         item.Result,
-                        previous: null,
-                        externalTriggers: Array.Empty<AiTriggerEvent>(),
+                        previous,
+                        triggers,
                         lastAnalysisAt,
-                        DateTimeOffset.UtcNow,
+                        occurredAt,
                         Cooldown))
                 {
                     skipped++;
@@ -49,7 +60,7 @@ public sealed class AiAnalysisCycleOrchestrator(
                     item.Ticker,
                     analysisDate,
                     item.Result,
-                    Array.Empty<AiTriggerEvent>());
+                    triggers);
 
                 var result = await orchestrator.AnalyzeAsync(request, ct);
 
