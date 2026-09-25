@@ -17,7 +17,23 @@ public sealed class TelegramAlertService(
             string.IsNullOrWhiteSpace(options.Value.ChatId))
             return;
 
-        var message = TelegramMessageFormatter.Format(response, quant, usedFallback);
+        var data = new TelegramAlertData(
+            response.Ticker,
+            response.Verdict,
+            quant.Score.TotalScore,
+            quant.CurrentPrice,
+            quant.FairValue.Conservative,
+            quant.FairValue.Base,
+            quant.MarginOfSafety,
+            quant.DataQuality,
+            response.WhyAccumulate,
+            response.WhyNotAccumulate,
+            response.KeyRisks,
+            response.InvalidationTriggers,
+            response.DataGaps,
+            usedFallback);
+
+        var message = TelegramMessageFormatter.Format(data);
         await notifier.SendAsync(options.Value.BotToken, options.Value.ChatId, message, ct);
     }
 }
