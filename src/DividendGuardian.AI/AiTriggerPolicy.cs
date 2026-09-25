@@ -2,6 +2,11 @@ using DividendGuardian.Quant;
 
 namespace DividendGuardian.AI;
 
+public sealed record AiTriggerState(
+    decimal CurrentPrice,
+    decimal TotalScore,
+    string Status);
+
 public sealed class AiTriggerPolicy
 {
     public bool ShouldAnalyze(
@@ -32,6 +37,50 @@ public sealed class AiTriggerPolicy
             return true;
 
         return Math.Abs(current.Score.TotalScore - previous.Score.TotalScore) >= 5m;
+    }
+
+    public IReadOnlyList<AiTriggerEvent> EvaluateTriggers(
+        QuantAnalysisResult current,
+        AiTriggerState? previous,
+        DateTimeOffset occurredAt)
+    {
+        var triggers = new List<AiTriggerEvent>();
+        var currentInBuyZone = current.BuyZone.Status is "STRONG_ACCUMULATE" or "ACCUMULATE";
+        var previousInBuyZone = previous?.Status is "STRONG_ACCUMULATE" or "ACCUMULATE";
+
+        if (currentInBuyZone && !previousInBuyZone)
+        {
+            triggers.Add(new AiTriggerEvent(
+                AiAnalysisTrigger.PriceEnteredBuyZone,
+                occurredAt,
+                "Quant status entered an accumulation state."));
+        }
+
+        if (previous is not null && previous.CurrentPrice > 0)
+        {
+            var priceDrop = 1m - current.CurrentPrice / previous.CurrentPrice;
+            if (priceDrop >= 0.05m)
+            {
+                triggers.Add(new AiTriggerEvent(
+                    AiAnalysisTrigger.PriceDrop,
+                    occurredAt,
+                    $"Price dropped {priceDrop:P1} versus the previous Quant snapshot."));
+            }
+        }
+
+        if (previous is not null)
+        {
+            var scoreChange = Math.Abs(current.Score.TotalScore - previous.TotalScore);
+            if (scoreChange >= 5m)
+            {
+                triggers.Add(new AiTriggerEvent(
+                    AiAnalysisTrigger.QuantScoreChanged,
+                    occurredAt,
+                    $"Quant score changed by {scoreChange:F1} points."));
+            }
+        }
+
+        return triggers;
     }
 
     private static bool IsInsideCooldown(
