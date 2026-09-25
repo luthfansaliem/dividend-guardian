@@ -20,17 +20,33 @@ public sealed class AiAnalysisCycleOrchestrator(
         DateOnly analysisDate,
         CancellationToken ct = default)
     {
+        var runId = Guid.NewGuid();
         var analyzed = 0;
         var skipped = 0;
         var failed = 0;
         var analysisItems = new List<AiAnalysisCycleItem>();
         var dailyLimit = Math.Max(0, aiOptions.Value.MaxAnalysesPerDay);
-        var dayStart = analysisDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var dayStart = GetJakartaDayStartUtc(analysisDate);
         var usedToday = await repository.GetAnalysisCountSinceAsync(dayStart, ct);
+
+        using var scope = logger.BeginScope(new Dictionary<string, object>
+        {
+            ["RunId"] = runId,
+            ["AnalysisDate"] = analysisDate
+        });
+
+        logger.LogInformation(
+            "AI analysis cycle started. RunId={RunId}, Tickers={TickerCount}, DailyBudget={DailyLimit}, UsedToday={UsedToday}",
+            runId, quantResults.Count, dailyLimit, usedToday);
 
         foreach (var item in quantResults)
         {
             ct.ThrowIfCancellationRequested();
+
+            using var tickerScope = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["Ticker"] = item.Ticker
+            });
 
             try
             {
@@ -55,9 +71,7 @@ public sealed class AiAnalysisCycleOrchestrator(
                         Cooldown))
                 {
                     skipped++;
-                    logger.LogDebug(
-                        "AI analysis skipped for {Ticker}: no trigger or inside cooldown.",
-                        item.Ticker);
+                    logger.LogDebug("AI analysis skipped: no trigger or inside cooldown.");
                     continue;
                 }
 
@@ -65,12 +79,15 @@ public sealed class AiAnalysisCycleOrchestrator(
                 {
                     skipped++;
                     logger.LogWarning(
-                        "AI analysis skipped for {Ticker}: daily AI budget exhausted ({Used}/{Limit}).",
-                        item.Ticker,
+                        "AI analysis skipped: daily AI budget exhausted ({Used}/{Limit}).",
                         usedToday,
                         dailyLimit);
                     continue;
                 }
+
+                logger.LogInformation(
+                    "AI analysis attempt started. TriggerCount={TriggerCount}",
+                    triggers.Count);
 
                 var request = new AiAnalysisRequest(
                     item.Ticker,
@@ -79,15 +96,23 @@ public sealed class AiAnalysisCycleOrchestrator(
                     triggers);
 
                 var result = await orchestrator.AnalyzeAsync(request, ct);
-
-                await repository.SaveAsync(
+                var saved = await repository.SaveAsync(
                     result.Response,
                     request.Triggers,
                     result.UsedFallback,
                     result.FailureReason,
                     ct);
 
-                usedToday++;
+                if (saved)
+                    usedToday++;
+
+                if (!saved)
+                {
+                    skipped++;
+                    logger.LogWarning("AI analysis result was already persisted; duplicate suppressed.");
+                    continue;
+                }
+
                 analyzed++;
                 analysisItems.Add(new AiAnalysisCycleItem(
                     item.Ticker,
@@ -98,15 +123,13 @@ public sealed class AiAnalysisCycleOrchestrator(
                 if (result.UsedFallback)
                 {
                     logger.LogWarning(
-                        "AI analysis fallback for {Ticker}: {Reason}",
-                        item.Ticker,
+                        "AI analysis fallback completed. Reason={Reason}",
                         result.FailureReason);
                 }
                 else
                 {
                     logger.LogInformation(
-                        "AI analysis completed for {Ticker}. Model={Model}",
-                        item.Ticker,
+                        "AI analysis completed. Model={Model}",
                         result.Response.Model);
                 }
             }
@@ -117,11 +140,35 @@ public sealed class AiAnalysisCycleOrchestrator(
             catch (Exception ex)
             {
                 failed++;
-                logger.LogError(ex, "AI analysis cycle failed for {Ticker}", item.Ticker);
+                logger.LogError(ex, "AI analysis cycle failed.");
             }
         }
 
+        logger.LogInformation(
+            "AI analysis cycle completed. RunId={RunId}, Analyzed={Analyzed}, Skipped={Skipped}, Failed={Failed}",
+            runId, analyzed, skipped, failed);
+
         return new AiAnalysisCycleResult(analyzed, skipped, failed, analysisItems);
+    }
+
+    private static DateTimeOffset GetJakartaDayStartUtc(DateOnly date)
+    {
+        var localStart = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+        var timeZone = GetJakartaTimeZone();
+        var utcStart = TimeZoneInfo.ConvertTimeToUtc(localStart, timeZone);
+        return new DateTimeOffset(utcStart);
+    }
+
+    private static TimeZoneInfo GetJakartaTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Asia/Jakarta");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        }
     }
 }
 
