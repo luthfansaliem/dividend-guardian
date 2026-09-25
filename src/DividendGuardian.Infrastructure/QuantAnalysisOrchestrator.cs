@@ -18,6 +18,7 @@ public sealed class QuantAnalysisOrchestrator(
         var success = 0;
         var insufficient = 0;
         var failed = 0;
+        var results = new List<QuantAnalysisItem>();
 
         logger.LogInformation(
             "Quant analysis cycle started. Date={AnalysisDate}, Stocks={Count}",
@@ -40,6 +41,7 @@ public sealed class QuantAnalysisOrchestrator(
 
                 var result = engine.Analyze(input);
                 await repository.SaveAsync(result, analysisDate, ct);
+                results.Add(new QuantAnalysisItem(stock.Ticker, result));
 
                 success++;
                 logger.LogInformation(
@@ -62,11 +64,16 @@ public sealed class QuantAnalysisOrchestrator(
             "Quant analysis cycle completed. Success={Success}, Insufficient={Insufficient}, Failed={Failed}",
             success, insufficient, failed);
 
-        return new QuantAnalysisCycleResult(success, insufficient, failed);
+        return new QuantAnalysisCycleResult(success, insufficient, failed, results);
     }
 }
+
+public sealed record QuantAnalysisItem(
+    string Ticker,
+    QuantAnalysisResult Result);
 
 public sealed record QuantAnalysisCycleResult(
     int Success,
     int Insufficient,
-    int Failed);
+    int Failed,
+    IReadOnlyList<QuantAnalysisItem>? Results = null);
