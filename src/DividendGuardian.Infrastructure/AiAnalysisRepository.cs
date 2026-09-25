@@ -19,11 +19,12 @@ public sealed class AiAnalysisRepository(Database database)
             insert into ai_analysis
                 (ticker, analysis_time, trigger_type, model, status, summary,
                  why_accumulate, why_not_accumulate, risks, invalidation_triggers,
-                 data_gaps, raw_response, model_version)
+                 data_gaps, data_quality, raw_response, model_version)
             values
                 (@ticker, now(), @trigger_type, @model, @status, @summary,
                  @why_accumulate, @why_not_accumulate, @risks,
-                 @invalidation_triggers, @data_gaps, @raw_response, @model_version);
+                 @invalidation_triggers, @data_gaps, @data_quality,
+                 @raw_response, @model_version);
             """;
 
         await using var connection = new NpgsqlConnection(database.ConnectionString);
@@ -40,6 +41,7 @@ public sealed class AiAnalysisRepository(Database database)
         command.Parameters.AddWithValue("risks", JsonSerializer.Serialize(response.KeyRisks));
         command.Parameters.AddWithValue("invalidation_triggers", JsonSerializer.Serialize(response.InvalidationTriggers));
         command.Parameters.AddWithValue("data_gaps", JsonSerializer.Serialize(response.DataGaps));
+        command.Parameters.AddWithValue("data_quality", response.DataQuality);
         command.Parameters.AddWithValue("raw_response", JsonSerializer.SerializeToDocument(response).RootElement.GetRawText());
         command.Parameters.AddWithValue("model_version", response.PromptVersion);
 
