@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace DividendGuardian.AI;
 
-public sealed class AiAnalyst
+public sealed class AiAnalyst : IAiAnalyst
 {
     private const string PromptVersion = "DG-AI-1.0";
     private readonly HttpClient _httpClient;
@@ -17,9 +17,7 @@ public sealed class AiAnalyst
         _options = options;
     }
 
-    public async Task<AiAnalysisResponse> AnalyzeAsync(
-        AiAnalysisRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<AiAnalysisResponse> AnalyzeAsync(AiAnalysisRequest request, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(_options.ApiKey))
             throw new InvalidOperationException("OPENAI_API_KEY is not configured.");
@@ -28,12 +26,7 @@ public sealed class AiAnalyst
         {
             ticker = request.Ticker,
             analysis_date = request.AnalysisDate.ToString("yyyy-MM-dd"),
-            triggers = request.Triggers.Select(x => new
-            {
-                type = x.Trigger.ToString(),
-                occurred_at = x.OccurredAt,
-                description = x.Description
-            }),
+            triggers = request.Triggers.Select(x => new { type = x.Trigger.ToString(), occurred_at = x.OccurredAt, description = x.Description }),
             quant = request.Quant
         };
 
@@ -45,19 +38,14 @@ public sealed class AiAnalyst
                 new { role = "system", content = new[] { new { type = "input_text", text = DividendGuardianAiPrompt.System } } },
                 new { role = "user", content = new[] { new { type = "input_text", text = JsonSerializer.Serialize(analystInput, JsonOptions) } } }
             },
-            text = new
-            {
-                format = new { type = "json_schema", name = "dividend_guardian_analysis", strict = true, schema = ResponseSchema }
-            },
+            text = new { format = new { type = "json_schema", name = "dividend_guardian_analysis", strict = true, schema = ResponseSchema } },
             store = false
         };
 
         var responseBody = await SendWithRetryAsync(body, cancellationToken);
         var outputText = ExtractOutputText(responseBody);
-        var result = JsonSerializer.Deserialize<AiAnalysisResponse>(outputText, JsonOptions);
-
-        if (result is null)
-            throw new InvalidOperationException("OpenAI returned an empty AI analysis.");
+        var result = JsonSerializer.Deserialize<AiAnalysisResponse>(outputText, JsonOptions)
+            ?? throw new InvalidOperationException("OpenAI returned an empty AI analysis.");
 
         ValidateResponse(result, request.Ticker);
 
@@ -82,11 +70,7 @@ public sealed class AiAnalyst
                 httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
                 httpRequest.Content = new StringContent(JsonSerializer.Serialize(body, JsonOptions), Encoding.UTF8, "application/json");
 
-                using var response = await _httpClient.SendAsync(
-                    httpRequest,
-                    HttpCompletionOption.ResponseHeadersRead,
-                    cancellationToken);
-
+                using var response = await _httpClient.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (response.IsSuccessStatusCode)
@@ -95,8 +79,7 @@ public sealed class AiAnalyst
                 if (!IsTransient(response.StatusCode) || attempt >= maxRetries)
                     throw new HttpRequestException(
                         $"OpenAI Responses API returned {(int)response.StatusCode}: {responseBody}",
-                        null,
-                        response.StatusCode);
+                        null, response.StatusCode);
 
                 await DelayBeforeRetryAsync(attempt, cancellationToken);
             }
@@ -140,9 +123,7 @@ public sealed class AiAnalyst
                 continue;
             foreach (var part in content.EnumerateArray())
             {
-                if (part.TryGetProperty("text", out var text) &&
-                    text.ValueKind == JsonValueKind.String &&
-                    !string.IsNullOrWhiteSpace(text.GetString()))
+                if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(text.GetString()))
                     return text.GetString()!;
             }
         }
@@ -154,7 +135,6 @@ public sealed class AiAnalyst
     {
         if (!string.Equals(result.Ticker, expectedTicker, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("AI response ticker does not match the request.");
-
         if (string.IsNullOrWhiteSpace(result.Verdict) ||
             string.IsNullOrWhiteSpace(result.WhyAccumulate) ||
             string.IsNullOrWhiteSpace(result.WhyNotAccumulate) ||
@@ -185,11 +165,6 @@ public sealed class AiAnalyst
             model = new { type = "string" },
             prompt_version = new { type = "string" }
         },
-        required = new[]
-        {
-            "ticker", "verdict", "why_accumulate", "why_not_accumulate",
-            "key_risks", "data_gaps", "invalidation_triggers",
-            "data_quality", "model", "prompt_version"
-        }
+        required = new[] { "ticker", "verdict", "why_accumulate", "why_not_accumulate", "key_risks", "data_gaps", "invalidation_triggers", "data_quality", "model", "prompt_version" }
     };
 }
