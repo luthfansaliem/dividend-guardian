@@ -20,6 +20,7 @@ public sealed class AiAnalysisCycleOrchestrator(
         var analyzed = 0;
         var skipped = 0;
         var failed = 0;
+        var analysisItems = new List<AiAnalysisCycleItem>();
 
         foreach (var item in quantResults)
         {
@@ -60,6 +61,11 @@ public sealed class AiAnalysisCycleOrchestrator(
                     ct);
 
                 analyzed++;
+                analysisItems.Add(new AiAnalysisCycleItem(
+                    item.Ticker,
+                    item.Result,
+                    result.Response,
+                    result.UsedFallback));
 
                 if (result.UsedFallback)
                 {
@@ -87,11 +93,18 @@ public sealed class AiAnalysisCycleOrchestrator(
             }
         }
 
-        return new AiAnalysisCycleResult(analyzed, skipped, failed);
+        return new AiAnalysisCycleResult(analyzed, skipped, failed, analysisItems);
     }
 }
+
+public sealed record AiAnalysisCycleItem(
+    string Ticker,
+    QuantAnalysisResult Quant,
+    AiAnalysisResponse Response,
+    bool UsedFallback);
 
 public sealed record AiAnalysisCycleResult(
     int Analyzed,
     int Skipped,
-    int Failed);
+    int Failed,
+    IReadOnlyList<AiAnalysisCycleItem> Items);
