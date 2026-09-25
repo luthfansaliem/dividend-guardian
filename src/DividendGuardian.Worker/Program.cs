@@ -76,6 +76,10 @@ builder.Services.AddSingleton<QuantAnalysisRepository>();
 builder.Services.AddSingleton<QuantAnalysisOrchestrator>();
 
 builder.Services.AddHttpClient<AiAnalyst>(c => c.Timeout = TimeSpan.FromSeconds(60));
+builder.Services.AddSingleton<IAiAnalyst>(sp => sp.GetRequiredService<AiAnalyst>());
+builder.Services.AddSingleton<AiAnalysisOrchestrator>();
+builder.Services.AddSingleton<AiAnalysisRepository>();
+
 builder.Services.AddHttpClient<TelegramNotifier>();
 
 builder.Services.AddHostedService<Worker>();
