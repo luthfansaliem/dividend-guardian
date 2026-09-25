@@ -69,6 +69,7 @@ public sealed class Worker(
                     try
                     {
                         var alert = new TelegramAlertData(
+                            item.RunId,
                             item.Response.Ticker,
                             item.Response.Verdict,
                             item.Quant.Score.TotalScore,
