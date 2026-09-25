@@ -9,6 +9,7 @@ public sealed class Worker(
     MarketDataCollector marketData,
     FundamentalCollector fundamentals,
     QuantAnalysisOrchestrator quantAnalysis,
+    AiAnalysisCycleOrchestrator aiAnalysis,
     IOptions<WorkerOptions> options,
     IOptions<MarketDataOptions> marketOptions,
     IOptions<FundamentalDataOptions> fundamentalOptions) : BackgroundService
@@ -51,6 +52,15 @@ public sealed class Worker(
                 logger.LogInformation(
                     "Quant analysis cycle complete. Success={Success}, Insufficient={Insufficient}, Failed={Failed}",
                     analysis.Success, analysis.Insufficient, analysis.Failed);
+
+                var ai = await aiAnalysis.AnalyzeAsync(
+                    analysis.Results ?? Array.Empty<QuantAnalysisItem>(),
+                    analysisDate,
+                    stoppingToken);
+
+                logger.LogInformation(
+                    "AI analysis cycle complete. Analyzed={Analyzed}, Skipped={Skipped}, Failed={Failed}",
+                    ai.Analyzed, ai.Skipped, ai.Failed);
 
                 if (marketOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase) &&
                     fundamentalOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase))
