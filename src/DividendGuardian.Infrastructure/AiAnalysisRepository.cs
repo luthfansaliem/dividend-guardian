@@ -27,6 +27,25 @@ public sealed class AiAnalysisRepository(Database database)
         return value is DateTimeOffset timestamp ? timestamp : null;
     }
 
+    public async Task<int> GetAnalysisCountSinceAsync(
+        DateTimeOffset since,
+        CancellationToken ct = default)
+    {
+        const string sql = """
+            select count(*)
+            from ai_analysis
+            where analysis_time >= @since;
+            """;
+
+        await using var connection = new NpgsqlConnection(database.ConnectionString);
+        await connection.OpenAsync(ct);
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("since", since);
+
+        var value = await command.ExecuteScalarAsync(ct);
+        return Convert.ToInt32(value);
+    }
+
     public async Task SaveAsync(
         AiAnalysisResponse response,
         IReadOnlyCollection<AiTriggerEvent> triggers,
