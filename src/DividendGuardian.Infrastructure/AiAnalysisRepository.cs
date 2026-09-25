@@ -41,6 +41,7 @@ public sealed class AiAnalysisRepository(Database database)
     }
 
     public async Task<bool> SaveAsync(
+        Guid runId,
         AiAnalysisResponse response,
         IReadOnlyCollection<AiTriggerEvent> triggers,
         bool usedFallback = false,
@@ -59,11 +60,11 @@ public sealed class AiAnalysisRepository(Database database)
 
         const string sql = """
             insert into ai_analysis
-                (ticker, analysis_time, trigger_type, model, status, summary,
+                (run_id, ticker, analysis_time, trigger_type, model, status, summary,
                  why_accumulate, why_not_accumulate, risks, invalidation_triggers,
                  data_gaps, data_quality, raw_response, model_version, idempotency_key)
             values
-                (@ticker, now(), @trigger_type, @model, @status, @summary,
+                (@run_id, @ticker, now(), @trigger_type, @model, @status, @summary,
                  @why_accumulate, @why_not_accumulate, @risks,
                  @invalidation_triggers, @data_gaps, @data_quality,
                  @raw_response, @model_version, @idempotency_key)
@@ -74,6 +75,7 @@ public sealed class AiAnalysisRepository(Database database)
         await connection.OpenAsync(ct);
         await using var command = new NpgsqlCommand(sql, connection);
 
+        command.Parameters.AddWithValue("run_id", runId);
         command.Parameters.AddWithValue("ticker", response.Ticker);
         command.Parameters.AddWithValue("trigger_type", triggerType);
         command.Parameters.AddWithValue("model", response.Model);
