@@ -1,6 +1,7 @@
 namespace DividendGuardian.Notification;
 
 public sealed record TelegramAlertData(
+    Guid RunId,
     string Ticker,
     string Verdict,
     decimal QuantScore,
@@ -23,6 +24,7 @@ public static class TelegramMessageFormatter
         var lines = new List<string>
         {
             $"🔔 Dividend Guardian — {data.Ticker}",
+            $"Run ID: {data.RunId}",
             $"Status: {data.Verdict}",
             $"Quant Score: {data.QuantScore:F1}/100",
             $"Price: {data.CurrentPrice:F2}",
