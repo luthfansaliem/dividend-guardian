@@ -8,6 +8,8 @@ public sealed class Database
 
     public Database(DatabaseOptions options) => _options = options;
 
+    public string ConnectionString => _options.ConnectionString;
+
     public async Task<int> PingAsync(CancellationToken cancellationToken = default)
     {
         await using var connection = new NpgsqlConnection(_options.ConnectionString);
