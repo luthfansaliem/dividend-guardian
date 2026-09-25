@@ -1,38 +1,48 @@
-using DividendGuardian.AI;
-using DividendGuardian.Quant;
-
 namespace DividendGuardian.Notification;
+
+public sealed record TelegramAlertData(
+    string Ticker,
+    string Verdict,
+    decimal QuantScore,
+    decimal CurrentPrice,
+    decimal? ConservativeFairValue,
+    decimal? BaseFairValue,
+    decimal? MarginOfSafety,
+    string DataQuality,
+    string WhyAccumulate,
+    string WhyNotAccumulate,
+    IReadOnlyList<string> KeyRisks,
+    IReadOnlyList<string> InvalidationTriggers,
+    IReadOnlyList<string> DataGaps,
+    bool UsedFallback);
 
 public static class TelegramMessageFormatter
 {
-    public static string Format(
-        AiAnalysisResponse response,
-        QuantAnalysisResult quant,
-        bool usedFallback)
+    public static string Format(TelegramAlertData data)
     {
         var lines = new List<string>
         {
-            $"🔔 Dividend Guardian — {response.Ticker}",
-            $"Status: {response.Verdict}",
-            $"Quant Score: {quant.Score.TotalScore:F1}/100",
-            $"Price: {quant.CurrentPrice:F2}",
-            $"Conservative FV: {FormatValue(quant.FairValue.Conservative)}",
-            $"Base FV: {FormatValue(quant.FairValue.Base)}",
-            $"Margin of Safety: {FormatPercent(quant.MarginOfSafety)}",
-            $"Data Quality: {quant.DataQuality}",
+            $"🔔 Dividend Guardian — {data.Ticker}",
+            $"Status: {data.Verdict}",
+            $"Quant Score: {data.QuantScore:F1}/100",
+            $"Price: {data.CurrentPrice:F2}",
+            $"Conservative FV: {FormatValue(data.ConservativeFairValue)}",
+            $"Base FV: {FormatValue(data.BaseFairValue)}",
+            $"Margin of Safety: {FormatPercent(data.MarginOfSafety)}",
+            $"Data Quality: {data.DataQuality}",
             "",
             "WHY ACCUMULATE",
-            response.WhyAccumulate,
+            data.WhyAccumulate,
             "",
             "WHY NOT ACCUMULATE",
-            response.WhyNotAccumulate
+            data.WhyNotAccumulate
         };
 
-        AddSection(lines, "⚠️ RISKS", response.KeyRisks);
-        AddSection(lines, "INVALIDATION", response.InvalidationTriggers);
-        AddSection(lines, "DATA GAPS", response.DataGaps);
+        AddSection(lines, "⚠️ RISKS", data.KeyRisks);
+        AddSection(lines, "INVALIDATION", data.InvalidationTriggers);
+        AddSection(lines, "DATA GAPS", data.DataGaps);
 
-        if (usedFallback)
+        if (data.UsedFallback)
         {
             lines.Add("");
             lines.Add("ℹ️ AI unavailable; this message uses the deterministic fallback.");
@@ -46,10 +56,7 @@ public static class TelegramMessageFormatter
         $"{ticker} — {status}{Environment.NewLine}" +
         $"Score: {score:0.0}/100{Environment.NewLine}{Environment.NewLine}{summary}";
 
-    private static void AddSection(
-        List<string> lines,
-        string title,
-        IReadOnlyList<string> values)
+    private static void AddSection(List<string> lines, string title, IReadOnlyList<string> values)
     {
         if (values.Count == 0) return;
         lines.Add("");
