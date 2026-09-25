@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -81,25 +82,59 @@ public sealed class AiAnalyst : IAiAnalyst
                         $"OpenAI Responses API returned {(int)response.StatusCode}: {responseBody}",
                         null, response.StatusCode);
 
-                await DelayBeforeRetryAsync(attempt, cancellationToken);
+                await DelayBeforeRetryAsync(attempt, response, cancellationToken);
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && attempt < maxRetries)
             {
-                await DelayBeforeRetryAsync(attempt, cancellationToken);
+                await DelayBeforeRetryAsync(attempt, null, cancellationToken);
             }
             catch (HttpRequestException ex) when (ex.StatusCode is null && attempt < maxRetries)
             {
-                await DelayBeforeRetryAsync(attempt, cancellationToken);
+                await DelayBeforeRetryAsync(attempt, null, cancellationToken);
             }
         }
     }
 
-    private async Task DelayBeforeRetryAsync(int attempt, CancellationToken cancellationToken)
+    private async Task DelayBeforeRetryAsync(
+        int attempt,
+        HttpResponseMessage? response,
+        CancellationToken cancellationToken)
     {
+        var retryAfter = response is not null && response.StatusCode == HttpStatusCode.TooManyRequests
+            ? GetRetryAfter(response)
+            : null;
+
         var baseDelay = Math.Max(0, _options.RetryDelayMs);
-        var delayMs = Math.Min(baseDelay * Math.Pow(2, attempt), 10_000);
-        if (delayMs > 0)
-            await Task.Delay(TimeSpan.FromMilliseconds(delayMs), cancellationToken);
+        var exponentialMs = Math.Min(baseDelay * Math.Pow(2, attempt), 10_000);
+        var delay = retryAfter ?? TimeSpan.FromMilliseconds(exponentialMs);
+
+        if (delay > TimeSpan.FromSeconds(10))
+            delay = TimeSpan.FromSeconds(10);
+
+        if (delay > TimeSpan.Zero)
+            await Task.Delay(delay, cancellationToken);
+    }
+
+    private static TimeSpan? GetRetryAfter(HttpResponseMessage response)
+    {
+        if (response.Headers.RetryAfter?.Delta is TimeSpan delta && delta >= TimeSpan.Zero)
+            return delta;
+
+        if (response.Headers.RetryAfter?.Date is DateTimeOffset date)
+        {
+            var delay = date - DateTimeOffset.UtcNow;
+            return delay > TimeSpan.Zero ? delay : TimeSpan.Zero;
+        }
+
+        if (response.Headers.TryGetValues("Retry-After", out var values))
+        {
+            var value = values.FirstOrDefault();
+            if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seconds) &&
+                seconds >= 0)
+                return TimeSpan.FromSeconds(seconds);
+        }
+
+        return null;
     }
 
     private static bool IsTransient(HttpStatusCode statusCode) =>
