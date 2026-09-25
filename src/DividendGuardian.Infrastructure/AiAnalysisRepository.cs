@@ -6,9 +6,7 @@ namespace DividendGuardian.Infrastructure;
 
 public sealed class AiAnalysisRepository(Database database)
 {
-    public async Task<DateTimeOffset?> GetLatestAnalysisAtAsync(
-        string ticker,
-        CancellationToken ct = default)
+    public async Task<DateTimeOffset?> GetLatestAnalysisAtAsync(string ticker, CancellationToken ct = default)
     {
         const string sql = """
             select analysis_time
@@ -22,14 +20,11 @@ public sealed class AiAnalysisRepository(Database database)
         await connection.OpenAsync(ct);
         await using var command = new NpgsqlCommand(sql, connection);
         command.Parameters.AddWithValue("ticker", ticker);
-
         var value = await command.ExecuteScalarAsync(ct);
         return value is DateTimeOffset timestamp ? timestamp : null;
     }
 
-    public async Task<int> GetAnalysisCountSinceAsync(
-        DateTimeOffset since,
-        CancellationToken ct = default)
+    public async Task<int> GetAnalysisCountSinceAsync(DateTimeOffset since, CancellationToken ct = default)
     {
         const string sql = """
             select count(*)
@@ -41,12 +36,11 @@ public sealed class AiAnalysisRepository(Database database)
         await connection.OpenAsync(ct);
         await using var command = new NpgsqlCommand(sql, connection);
         command.Parameters.AddWithValue("since", since);
-
         var value = await command.ExecuteScalarAsync(ct);
         return Convert.ToInt32(value);
     }
 
-    public async Task SaveAsync(
+    public async Task<bool> SaveAsync(
         AiAnalysisResponse response,
         IReadOnlyCollection<AiTriggerEvent> triggers,
         bool usedFallback = false,
@@ -57,16 +51,23 @@ public sealed class AiAnalysisRepository(Database database)
             ? AiAnalysisTrigger.ManualReview.ToString()
             : triggers.First().Trigger.ToString();
 
+        var triggerDate = triggers.Count == 0
+            ? DateOnly.FromDateTime(DateTime.UtcNow)
+            : DateOnly.FromDateTime(triggers.First().OccurredAt.UtcDateTime);
+
+        var idempotencyKey = $"{response.Ticker}|{triggerType}|{triggerDate:yyyy-MM-dd}";
+
         const string sql = """
             insert into ai_analysis
                 (ticker, analysis_time, trigger_type, model, status, summary,
                  why_accumulate, why_not_accumulate, risks, invalidation_triggers,
-                 data_gaps, data_quality, raw_response, model_version)
+                 data_gaps, data_quality, raw_response, model_version, idempotency_key)
             values
                 (@ticker, now(), @trigger_type, @model, @status, @summary,
                  @why_accumulate, @why_not_accumulate, @risks,
                  @invalidation_triggers, @data_gaps, @data_quality,
-                 @raw_response, @model_version);
+                 @raw_response, @model_version, @idempotency_key)
+            on conflict (idempotency_key) do nothing;
             """;
 
         await using var connection = new NpgsqlConnection(database.ConnectionString);
@@ -90,7 +91,8 @@ public sealed class AiAnalysisRepository(Database database)
         command.Parameters.AddWithValue("data_quality", response.DataQuality);
         command.Parameters.AddWithValue("raw_response", JsonSerializer.SerializeToDocument(response).RootElement.GetRawText());
         command.Parameters.AddWithValue("model_version", response.PromptVersion);
+        command.Parameters.AddWithValue("idempotency_key", idempotencyKey);
 
-        await command.ExecuteNonQueryAsync(ct);
+        return await command.ExecuteNonQueryAsync(ct) > 0;
     }
 }
