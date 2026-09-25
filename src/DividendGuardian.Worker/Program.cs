@@ -14,6 +14,11 @@ builder.Services.Configure<AiOptions>(o =>
 {
     o.ApiKey = builder.Configuration["OPENAI_API_KEY"] ?? "";
     o.Model = builder.Configuration["OPENAI_MODEL"] ?? "gpt-5.6-luna";
+    o.MaxAnalysesPerDay = int.TryParse(
+        builder.Configuration["OPENAI_MAX_ANALYSES_PER_DAY"],
+        out var maxAnalyses)
+        ? maxAnalyses
+        : 10;
 });
 
 builder.Services.Configure<WorkerOptions>(builder.Configuration.GetSection("Worker"));
