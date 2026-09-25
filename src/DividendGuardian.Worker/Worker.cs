@@ -68,11 +68,23 @@ public sealed class Worker(
                 {
                     try
                     {
-                        await telegram.SendAsync(
-                            item.Response,
-                            item.Quant,
-                            item.UsedFallback,
-                            stoppingToken);
+                        var alert = new TelegramAlertData(
+                            item.Response.Ticker,
+                            item.Response.Verdict,
+                            item.Quant.Score.TotalScore,
+                            item.Quant.CurrentPrice,
+                            item.Quant.FairValue.Conservative,
+                            item.Quant.FairValue.Base,
+                            item.Quant.MarginOfSafety,
+                            item.Quant.DataQuality,
+                            item.Response.WhyAccumulate,
+                            item.Response.WhyNotAccumulate,
+                            item.Response.KeyRisks,
+                            item.Response.InvalidationTriggers,
+                            item.Response.DataGaps,
+                            item.UsedFallback);
+
+                        await telegram.SendAsync(alert, stoppingToken);
                     }
                     catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                     {
