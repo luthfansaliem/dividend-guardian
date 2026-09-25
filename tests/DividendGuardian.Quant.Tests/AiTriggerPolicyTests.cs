@@ -45,6 +45,44 @@ public sealed class AiTriggerPolicyTests
     }
 
     [Fact]
+    public void ShouldAnalyze_WhenPriceDropsAtLeastFivePercent()
+    {
+        var policy = new AiTriggerPolicy();
+        var previous = CreateQuant("WATCH", 100m, 60m);
+        var current = CreateQuant("WATCH", 95m, 60m);
+
+        Assert.True(policy.ShouldAnalyze(
+            current, previous, Array.Empty<AiTriggerEvent>()));
+    }
+
+    [Fact]
+    public void ShouldAnalyze_WhenQuantScoreChangesAtLeastFivePoints()
+    {
+        var policy = new AiTriggerPolicy();
+        var previous = CreateQuant("WATCH", 100m, 60m);
+        var current = CreateQuant("WATCH", 100m, 65m);
+
+        Assert.True(policy.ShouldAnalyze(
+            current, previous, Array.Empty<AiTriggerEvent>()));
+    }
+
+    [Fact]
+    public void ShouldNotAnalyze_WhenExternalTriggerIsInsideCooldown()
+    {
+        var policy = new AiTriggerPolicy();
+        var current = CreateQuant("WATCH", 100m, 60m);
+        var trigger = new AiTriggerEvent(
+            AiAnalysisTrigger.NewFinancialReport,
+            DateTimeOffset.UtcNow);
+        var last = new DateTimeOffset(2026, 9, 25, 7, 0, 0, TimeSpan.Zero);
+        var now = new DateTimeOffset(2026, 9, 25, 8, 0, 0, TimeSpan.Zero);
+
+        Assert.False(policy.ShouldAnalyze(
+            current, null, new[] { trigger }, last, now,
+            TimeSpan.FromHours(24)));
+    }
+
+    [Fact]
     public void ShouldNotAnalyze_WhenNothingChanged()
     {
         var policy = new AiTriggerPolicy();
