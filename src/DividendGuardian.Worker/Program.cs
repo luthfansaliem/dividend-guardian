@@ -18,6 +18,13 @@ builder.Services.Configure<AiOptions>(o =>
 
 builder.Services.Configure<WorkerOptions>(builder.Configuration.GetSection("Worker"));
 
+builder.Services.Configure<TelegramOptions>(o =>
+{
+    o.BotToken = builder.Configuration["TELEGRAM_BOT_TOKEN"] ?? "";
+    o.ChatId = builder.Configuration["TELEGRAM_CHAT_ID"] ?? "";
+    o.Enabled = bool.TryParse(builder.Configuration["TELEGRAM_ENABLED"], out var enabled) && enabled;
+});
+
 builder.Services.Configure<MarketDataOptions>(o =>
 {
     o.Provider = builder.Configuration["MARKET_DATA_PROVIDER"] ?? "none";
@@ -82,7 +89,8 @@ builder.Services.AddSingleton<AiTriggerPolicy>();
 builder.Services.AddSingleton<AiAnalysisRepository>();
 builder.Services.AddSingleton<AiAnalysisCycleOrchestrator>();
 
-builder.Services.AddHttpClient<TelegramNotifier>();
+builder.Services.AddHttpClient<TelegramNotifier>(client => client.Timeout = TimeSpan.FromSeconds(15));
+builder.Services.AddSingleton<TelegramAlertService>();
 
 builder.Services.AddHostedService<Worker>();
 
