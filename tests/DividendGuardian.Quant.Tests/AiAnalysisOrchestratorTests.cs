@@ -37,6 +37,7 @@ public sealed class AiAnalysisOrchestratorTests
     {
         var orchestrator = new AiAnalysisOrchestrator(new CancelingAnalyst());
         using var cts = new CancellationTokenSource();
+        cts.Cancel();
 
         await Assert.ThrowsAsync<OperationCanceledException>(
             () => orchestrator.AnalyzeAsync(CreateRequest(), cts.Token));
@@ -87,7 +88,6 @@ public sealed class AiAnalysisOrchestratorTests
         public Task<AiAnalysisResponse> AnalyzeAsync(
             AiAnalysisRequest request,
             CancellationToken cancellationToken = default) =>
-            Task.FromCanceled<AiAnalysisResponse>(
-                new CancellationToken(true));
+            Task.FromCanceled<AiAnalysisResponse>(cancellationToken);
     }
 }
