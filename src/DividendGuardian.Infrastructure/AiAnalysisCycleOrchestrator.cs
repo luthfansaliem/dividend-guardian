@@ -1,0 +1,97 @@
+using DividendGuardian.AI;
+using DividendGuardian.Quant;
+using Microsoft.Extensions.Logging;
+
+namespace DividendGuardian.Infrastructure;
+
+public sealed class AiAnalysisCycleOrchestrator(
+    AiAnalysisOrchestrator orchestrator,
+    AiTriggerPolicy triggerPolicy,
+    AiAnalysisRepository repository,
+    ILogger<AiAnalysisCycleOrchestrator> logger)
+{
+    private static readonly TimeSpan Cooldown = TimeSpan.FromHours(24);
+
+    public async Task<AiAnalysisCycleResult> AnalyzeAsync(
+        IReadOnlyList<QuantAnalysisItem> quantResults,
+        DateOnly analysisDate,
+        CancellationToken ct = default)
+    {
+        var analyzed = 0;
+        var skipped = 0;
+        var failed = 0;
+
+        foreach (var item in quantResults)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                var lastAnalysisAt = await repository.GetLatestAnalysisAtAsync(item.Ticker, ct);
+
+                if (!triggerPolicy.ShouldAnalyze(
+                        item.Result,
+                        previous: null,
+                        externalTriggers: Array.Empty<AiTriggerEvent>(),
+                        lastAnalysisAt,
+                        DateTimeOffset.UtcNow,
+                        Cooldown))
+                {
+                    skipped++;
+                    logger.LogDebug(
+                        "AI analysis skipped for {Ticker}: no trigger or inside cooldown.",
+                        item.Ticker);
+                    continue;
+                }
+
+                var request = new AiAnalysisRequest(
+                    item.Ticker,
+                    analysisDate,
+                    item.Result,
+                    Array.Empty<AiTriggerEvent>());
+
+                var result = await orchestrator.AnalyzeAsync(request, ct);
+
+                await repository.SaveAsync(
+                    result.Response,
+                    request.Triggers,
+                    result.UsedFallback,
+                    result.FailureReason,
+                    ct);
+
+                analyzed++;
+
+                if (result.UsedFallback)
+                {
+                    logger.LogWarning(
+                        "AI analysis fallback for {Ticker}: {Reason}",
+                        item.Ticker,
+                        result.FailureReason);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "AI analysis completed for {Ticker}. Model={Model}",
+                        item.Ticker,
+                        result.Response.Model);
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                failed++;
+                logger.LogError(ex, "AI analysis cycle failed for {Ticker}", item.Ticker);
+            }
+        }
+
+        return new AiAnalysisCycleResult(analyzed, skipped, failed);
+    }
+}
+
+public sealed record AiAnalysisCycleResult(
+    int Analyzed,
+    int Skipped,
+    int Failed);
