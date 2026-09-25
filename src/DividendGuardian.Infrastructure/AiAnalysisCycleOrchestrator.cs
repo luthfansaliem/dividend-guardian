@@ -97,6 +97,7 @@ public sealed class AiAnalysisCycleOrchestrator(
 
                 var result = await orchestrator.AnalyzeAsync(request, ct);
                 var saved = await repository.SaveAsync(
+                    runId,
                     result.Response,
                     request.Triggers,
                     result.UsedFallback,
@@ -115,6 +116,7 @@ public sealed class AiAnalysisCycleOrchestrator(
 
                 analyzed++;
                 analysisItems.Add(new AiAnalysisCycleItem(
+                    runId,
                     item.Ticker,
                     item.Result,
                     result.Response,
@@ -173,6 +175,7 @@ public sealed class AiAnalysisCycleOrchestrator(
 }
 
 public sealed record AiAnalysisCycleItem(
+    Guid RunId,
     string Ticker,
     QuantAnalysisResult Quant,
     AiAnalysisResponse Response,
