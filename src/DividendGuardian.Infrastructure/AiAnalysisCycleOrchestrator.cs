@@ -1,6 +1,7 @@
 using DividendGuardian.AI;
 using DividendGuardian.Quant;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DividendGuardian.Infrastructure;
 
@@ -9,6 +10,7 @@ public sealed class AiAnalysisCycleOrchestrator(
     AiTriggerPolicy triggerPolicy,
     AiAnalysisRepository repository,
     QuantAnalysisRepository quantRepository,
+    IOptions<AiOptions> aiOptions,
     ILogger<AiAnalysisCycleOrchestrator> logger)
 {
     private static readonly TimeSpan Cooldown = TimeSpan.FromHours(24);
@@ -22,6 +24,9 @@ public sealed class AiAnalysisCycleOrchestrator(
         var skipped = 0;
         var failed = 0;
         var analysisItems = new List<AiAnalysisCycleItem>();
+        var dailyLimit = Math.Max(0, aiOptions.Value.MaxAnalysesPerDay);
+        var dayStart = analysisDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var usedToday = await repository.GetAnalysisCountSinceAsync(dayStart, ct);
 
         foreach (var item in quantResults)
         {
@@ -56,6 +61,17 @@ public sealed class AiAnalysisCycleOrchestrator(
                     continue;
                 }
 
+                if (usedToday >= dailyLimit)
+                {
+                    skipped++;
+                    logger.LogWarning(
+                        "AI analysis skipped for {Ticker}: daily AI budget exhausted ({Used}/{Limit}).",
+                        item.Ticker,
+                        usedToday,
+                        dailyLimit);
+                    continue;
+                }
+
                 var request = new AiAnalysisRequest(
                     item.Ticker,
                     analysisDate,
@@ -71,6 +87,7 @@ public sealed class AiAnalysisCycleOrchestrator(
                     result.FailureReason,
                     ct);
 
+                usedToday++;
                 analyzed++;
                 analysisItems.Add(new AiAnalysisCycleItem(
                     item.Ticker,
