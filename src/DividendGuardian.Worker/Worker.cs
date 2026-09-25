@@ -12,7 +12,8 @@ public sealed class Worker(
     AiAnalysisCycleOrchestrator aiAnalysis,
     IOptions<WorkerOptions> options,
     IOptions<MarketDataOptions> marketOptions,
-    IOptions<FundamentalDataOptions> fundamentalOptions) : BackgroundService
+    IOptions<FundamentalDataOptions> fundamentalOptions,
+    TelegramAlertService telegram) : BackgroundService
 {
     private DateTimeOffset? lastFundamentalRun;
 
@@ -61,6 +62,26 @@ public sealed class Worker(
                 logger.LogInformation(
                     "AI analysis cycle complete. Analyzed={Analyzed}, Skipped={Skipped}, Failed={Failed}",
                     ai.Analyzed, ai.Skipped, ai.Failed);
+
+                foreach (var item in ai.Items)
+                {
+                    try
+                    {
+                        await telegram.SendAsync(
+                            item.Response,
+                            item.Quant,
+                            item.UsedFallback,
+                            stoppingToken);
+                    }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Telegram notification failed for {Ticker}", item.Ticker);
+                    }
+                }
 
                 if (marketOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase) &&
                     fundamentalOptions.Value.Provider.Equals("none", StringComparison.OrdinalIgnoreCase))
