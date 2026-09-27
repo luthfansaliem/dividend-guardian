@@ -102,6 +102,7 @@ public sealed class YahooAsiiQuantIntegrationTests
         Console.WriteLine($"ASII.JK latest FCF/share = {(latestFundamental.FreeCashFlow / latestFundamental.SharesOutstanding):F2}");
         Console.WriteLine($"ASII.JK latest DPS = {latestDividend.Dps:F2}");
         Console.WriteLine($"ASII.JK historical median dividend yield = {result.HistoricalMedianDividendYieldPercent:F2}%");
+        Console.WriteLine($"ASII.JK historical dividend yield samples = {string.Join(",", annualDividends.Join(annualPrices, d => d.Year, p => p.Year, (d, p) => $"{d.Year}:DPS={d.Dps:F2}/Price={p.Close:F2}/Yield={d.Dps / p.Close * 100m:F2}%"))}");
         Console.WriteLine($"ASII.JK historical median PE = {result.HistoricalMedianPe:F2}x");
         Console.WriteLine($"ASII.JK historical median FCF yield = {result.HistoricalMedianFcfYieldPercent:F2}%");
         Console.WriteLine($"ASII.JK dividend fair value = {fairValueAudit.DividendYieldFairValue:F2}");
