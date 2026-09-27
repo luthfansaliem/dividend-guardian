@@ -25,6 +25,7 @@ public sealed record QuantAnalysisResult(
     decimal? HistoricalMedianFcfYieldPercent,
     decimal RiskScore,
     FairValueRange FairValue,
+    ValuationConfidenceMetrics ValuationConfidence,
     decimal? MarginOfSafety,
     BuyZone BuyZone,
     IReadOnlyList<string> Reasons,
@@ -118,7 +119,8 @@ public sealed class QuantAnalysisEngine
             fairValue.Range.Conservative,
             fairValue.Range.Base,
             fairValue.Range.Optimistic,
-            score.TotalScore);
+            score.TotalScore,
+            fairValue.Confidence.Level);
 
         var dataQuality = DetermineDataQuality(fundamentals, dividends, prices, historicalYield, historicalPe, historicalFcfYield, fairValue);
         var reasons = BuildReasons(currentYield, historicalYield, currentPe, historicalPe,
@@ -128,7 +130,7 @@ public sealed class QuantAnalysisEngine
         return new QuantAnalysisResult(
             score, metrics, input.CurrentPrice, currentYield, historicalYield,
             currentPe, historicalPe, currentFcfYield, historicalFcfYield, riskScore,
-            fairValue.Range, marginOfSafety, buyZone, reasons, dataQuality);
+            fairValue.Range, fairValue.Confidence, marginOfSafety, buyZone, reasons, dataQuality);
     }
 
     private static string DetermineDataQuality(
@@ -205,6 +207,7 @@ public sealed class QuantAnalysisEngine
             reasons.Add("Fair value unavailable: insufficient valuation baseline data.");
         if (marginOfSafety is not null)
             reasons.Add($"Margin of safety vs conservative fair value {marginOfSafety.Value.ToString("P1", CultureInfo.InvariantCulture)}.");
+        reasons.Add($"Valuation confidence {fairValue.Confidence.Level}; method spread {fairValue.Confidence.SpreadPercent?.ToString("F1", CultureInfo.InvariantCulture) ?? "N/A"}%.");
         reasons.Add($"Risk score {riskScore.ToString("F1", CultureInfo.InvariantCulture)}/15.");
         return reasons;
     }
