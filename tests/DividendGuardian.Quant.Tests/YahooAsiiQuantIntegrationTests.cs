@@ -121,6 +121,9 @@ public sealed class YahooAsiiQuantIntegrationTests
         Console.WriteLine($"ASII.JK EPS CAGR 5Y = {result.Metrics.EpsCagr5Y:F1}%");
         Console.WriteLine($"ASII.JK EPS CAGR 3Y = {result.Metrics.EpsCagr3Y:F1}%");
         Console.WriteLine($"ASII.JK earnings consistency = {result.Metrics.EarningsConsistencyScore:F1}");
+        Console.WriteLine($"ASII.JK stable/growing dividend years = {result.Metrics.StableOrGrowingYears}");
+        Console.WriteLine($"ASII.JK growth 5Y contribution = {(result.Metrics.EpsCagr5Y is null ? 0m : result.Metrics.EpsCagr5Y >= 12m ? 10m : result.Metrics.EpsCagr5Y >= 8m ? 8m : result.Metrics.EpsCagr5Y >= 5m ? 6m : result.Metrics.EpsCagr5Y >= 0m ? 3m : 0m):F1}/10");
+        Console.WriteLine($"ASII.JK growth 3Y contribution = {(result.Metrics.EpsCagr3Y is null ? 0m : result.Metrics.EpsCagr3Y >= 12m ? 6m : result.Metrics.EpsCagr3Y >= 8m ? 5m : result.Metrics.EpsCagr3Y >= 5m ? 4m : result.Metrics.EpsCagr3Y >= 0m ? 2m : 0m):F1}/6");
         Console.WriteLine($"ASII.JK valuation confidence = {result.ValuationConfidence.Level}; spread = {result.ValuationConfidence.SpreadPercent:F1}%");
         Console.WriteLine($"ASII.JK data quality = {result.DataQuality}");
     }
