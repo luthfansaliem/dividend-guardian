@@ -11,8 +11,8 @@ public sealed class QuantScoringEngine
         decimal payoutRatio,
         decimal fcfPayoutRatio,
         int dividendHistoryScore,
-        decimal epsCagr5Y,
-        decimal epsCagr3Y,
+        decimal? epsCagr5Y,
+        decimal? epsCagr3Y,
         decimal earningsConsistencyScore,
         decimal peValuationScore,
         decimal yieldValuationScore,
@@ -58,10 +58,16 @@ public sealed class QuantScoringEngine
         return Clamp(payoutScore + fcfScore + historyScore, 0, 25);
     }
 
-    public static decimal ScoreGrowth(decimal eps5Y, decimal eps3Y, decimal consistencyScore)
+    public static decimal ScoreGrowth(decimal? eps5Y, decimal? eps3Y, decimal consistencyScore)
     {
-        var five = eps5Y >= 12 ? 10 : eps5Y >= 8 ? 8 : eps5Y >= 5 ? 6 : eps5Y >= 0 ? 3 : 0;
-        var three = eps3Y >= 12 ? 6 : eps3Y >= 8 ? 5 : eps3Y >= 5 ? 4 : eps3Y >= 0 ? 2 : 0;
+        var five = eps5Y is null
+            ? 0m
+            : eps5Y >= 12 ? 10 : eps5Y >= 8 ? 8 : eps5Y >= 5 ? 6 : eps5Y >= 0 ? 3 : 0;
+
+        var three = eps3Y is null
+            ? 0m
+            : eps3Y >= 12 ? 6 : eps3Y >= 8 ? 5 : eps3Y >= 5 ? 4 : eps3Y >= 0 ? 2 : 0;
+
         return Clamp(five + three + consistencyScore, 0, 20);
     }
 
