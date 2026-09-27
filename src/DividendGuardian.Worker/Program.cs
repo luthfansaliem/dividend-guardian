@@ -60,12 +60,19 @@ builder.Services.AddSingleton<StockRepository>();
 builder.Services.AddSingleton<MarketDataRepository>();
 builder.Services.AddSingleton<MarketDataCollector>();
 builder.Services.AddHttpClient<TwelveDataMarketDataProvider>();
+builder.Services.AddHttpClient<YahooFinanceMarketDataProvider>();
+
 builder.Services.AddSingleton<IMarketDataProvider>(sp =>
 {
     var options = sp.GetRequiredService<IOptions<MarketDataOptions>>().Value;
-    return options.Provider.Equals("twelvedata", StringComparison.OrdinalIgnoreCase)
-        ? sp.GetRequiredService<TwelveDataMarketDataProvider>()
-        : new NotConfiguredMarketDataProvider();
+
+    if (options.Provider.Equals("yahoo", StringComparison.OrdinalIgnoreCase))
+        return sp.GetRequiredService<YahooFinanceMarketDataProvider>();
+
+    if (options.Provider.Equals("twelvedata", StringComparison.OrdinalIgnoreCase))
+        return sp.GetRequiredService<TwelveDataMarketDataProvider>();
+
+    return new NotConfiguredMarketDataProvider();
 });
 
 builder.Services.AddSingleton<FundamentalDataRepository>();
