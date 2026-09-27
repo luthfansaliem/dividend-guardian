@@ -46,6 +46,41 @@ public sealed class FairValueEngineTests
         Assert.Equal(144m, result.Range.Conservative);
         Assert.Equal(160m, result.Range.Base);
         Assert.Equal(176m, result.Range.Optimistic);
+        Assert.Equal(3, result.Confidence.ValidMethodCount);
+        Assert.Equal(120m, result.Confidence.MinFairValue);
+        Assert.Equal(200m, result.Confidence.MaxFairValue);
+        Assert.Equal(50m, result.Confidence.SpreadPercent);
+        Assert.Equal("HIGH_DISAGREEMENT", result.Confidence.Level);
+    }
+
+    [Fact]
+    public void Calculate_ClassifiesTightMethodsAsStrongAgreement()
+    {
+        var result = new FairValueEngine().Calculate(new FairValueInput(
+            ForwardDps: 10m,
+            NormalizedEps: 10.5m,
+            NormalizedFcfPerShare: 10m,
+            HistoricalMedianDividendYieldPercent: 5m,
+            HistoricalMedianPe: 10m,
+            HistoricalMedianFcfYieldPercent: 5m));
+
+        Assert.Equal("STRONG", result.Confidence.Level);
+        Assert.Equal(5m, result.Confidence.SpreadPercent);
+    }
+
+    [Fact]
+    public void Calculate_ClassifiesModerateMethodSpread()
+    {
+        var result = new FairValueEngine().Calculate(new FairValueInput(
+            ForwardDps: 10m,
+            NormalizedEps: 11m,
+            NormalizedFcfPerShare: 10m,
+            HistoricalMedianDividendYieldPercent: 5m,
+            HistoricalMedianPe: 10m,
+            HistoricalMedianFcfYieldPercent: 5m));
+
+        Assert.Equal("MODERATE", result.Confidence.Level);
+        Assert.Equal(10m, result.Confidence.SpreadPercent);
     }
 
     [Fact]
