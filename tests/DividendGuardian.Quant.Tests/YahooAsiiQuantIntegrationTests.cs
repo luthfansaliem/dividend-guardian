@@ -87,6 +87,16 @@ public sealed class YahooAsiiQuantIntegrationTests
             result.HistoricalMedianPe,
             result.HistoricalMedianFcfYieldPercent));
 
+        var latestFundamental = annualFundamentals.Last();
+        var latestDividend = annualDividends.Last();
+        var currentVsMedian = result.FairValue.Base is > 0
+            ? (1m - result.CurrentPrice / result.FairValue.Base.Value) * 100m
+            : 0m;
+
+        Console.WriteLine($"ASII.JK latest fiscal year = {latestFundamental.Year}");
+        Console.WriteLine($"ASII.JK latest EPS = {latestFundamental.Eps:F2}");
+        Console.WriteLine($"ASII.JK latest FCF/share = {(latestFundamental.FreeCashFlow / latestFundamental.SharesOutstanding):F2}");
+        Console.WriteLine($"ASII.JK latest DPS = {latestDividend.Dps:F2}");
         Console.WriteLine($"ASII.JK historical median dividend yield = {result.HistoricalMedianDividendYieldPercent:F2}%");
         Console.WriteLine($"ASII.JK historical median PE = {result.HistoricalMedianPe:F2}x");
         Console.WriteLine($"ASII.JK historical median FCF yield = {result.HistoricalMedianFcfYieldPercent:F2}%");
@@ -95,6 +105,7 @@ public sealed class YahooAsiiQuantIntegrationTests
         Console.WriteLine($"ASII.JK FCF fair value = {fairValueAudit.FcfFairValue:F2}");
         Console.WriteLine($"ASII.JK fair value conservative = {result.FairValue.Conservative:F2}");
         Console.WriteLine($"ASII.JK fair value base = {result.FairValue.Base:F2}");
+        Console.WriteLine($"ASII.JK current vs base fair value = {currentVsMedian:F1}%");
         Console.WriteLine($"ASII.JK fair value optimistic = {result.FairValue.Optimistic:F2}");
         Console.WriteLine($"ASII.JK margin of safety = {result.MarginOfSafety:P1}");
         Console.WriteLine($"ASII.JK buy zone = {result.BuyZone.Status}");
