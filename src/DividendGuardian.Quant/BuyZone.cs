@@ -83,5 +83,4 @@ public sealed class BuyZoneEngine
             null,
             "REVIEW",
             new[] { reason, "No accumulation status is assigned without a valid conservative fair value." });
-    }
 }
