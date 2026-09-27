@@ -73,14 +73,14 @@ public sealed class FairValueEngineTests
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
             ForwardDps: 10m,
-            NormalizedEps: 10.5m,
+            NormalizedEps: 11m,
             NormalizedFcfPerShare: 10m,
             HistoricalMedianDividendYieldPercent: 10m,
             HistoricalMedianPe: 10m,
             HistoricalMedianFcfYieldPercent: 10m));
 
         Assert.Equal("MODERATE", result.Confidence.Level);
-        Assert.Equal(5m, result.Confidence.SpreadPercent);
+        Assert.Equal(10m, result.Confidence.SpreadPercent);
     }
 
     [Fact]
