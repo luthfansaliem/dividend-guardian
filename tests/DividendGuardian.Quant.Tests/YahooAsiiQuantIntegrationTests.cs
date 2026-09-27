@@ -32,7 +32,7 @@ public sealed class YahooAsiiQuantIntegrationTests
             .ToArray();
 
         var annualFundamentals = fundamentals
-            .Where(x => x.PeriodEnd.Year >= 2021)
+            .Where(x => x.PeriodEnd.Year >= 2020)
             .Where(x => x.Eps > 0 && x.SharesOutstanding > 0)
             .Select(x => new AnnualFundamentalPoint(
                 x.PeriodEnd.Year,
