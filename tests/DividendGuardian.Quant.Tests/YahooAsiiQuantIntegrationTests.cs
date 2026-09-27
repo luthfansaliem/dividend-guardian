@@ -13,7 +13,7 @@ public sealed class YahooAsiiQuantIntegrationTests
         var market = new YahooFinanceMarketDataProvider(httpClient);
         var fundamentalsProvider = new YahooFinanceFundamentalDataProvider(httpClient);
 
-        var from = new DateOnly(2021, 1, 1);
+        var from = new DateOnly(2020, 1, 1);
         var to = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var prices = await market.GetEodPricesAsync("ASII.JK", from, to);
