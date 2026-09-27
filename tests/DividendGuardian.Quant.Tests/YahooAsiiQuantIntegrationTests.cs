@@ -110,7 +110,7 @@ public sealed class YahooAsiiQuantIntegrationTests
         Console.WriteLine($"ASII.JK margin of safety = {result.MarginOfSafety:P1}");
         Console.WriteLine($"ASII.JK buy zone = {result.BuyZone.Status}");
         Console.WriteLine($"ASII.JK score = {result.Score.TotalScore:F1}");
-        Console.WriteLine($"ASII.JK score yield = {result.Score.YieldScore:F1}/15");
+        Console.WriteLine($"ASII.JK score yield = {result.Score.DividendYieldScore:F1}/15");
         Console.WriteLine($"ASII.JK score sustainability = {result.Score.SustainabilityScore:F1}/25");
         Console.WriteLine($"ASII.JK score growth = {result.Score.GrowthScore:F1}/20");
         Console.WriteLine($"ASII.JK score valuation = {result.Score.ValuationScore:F1}/25");
