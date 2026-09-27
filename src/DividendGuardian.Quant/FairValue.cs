@@ -111,7 +111,7 @@ public sealed class FairValueEngine
     {
         var min = methods.Min();
         var max = methods.Max();
-        var spreadPercent = baseValue > 0
+        decimal? spreadPercent = baseValue > 0
             ? (max - min) / baseValue * 100m
             : null;
 
