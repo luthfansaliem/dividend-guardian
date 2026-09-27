@@ -10,11 +10,19 @@ public sealed record FairValueInput(
     decimal? HistoricalMedianPe,
     decimal? HistoricalMedianFcfYieldPercent);
 
+public sealed record ValuationConfidenceMetrics(
+    int ValidMethodCount,
+    decimal? MinFairValue,
+    decimal? MaxFairValue,
+    decimal? SpreadPercent,
+    string Level);
+
 public sealed record FairValueResult(
     FairValueRange Range,
     decimal? DividendYieldFairValue,
     decimal? PeFairValue,
     decimal? FcfFairValue,
+    ValuationConfidenceMetrics Confidence,
     IReadOnlyList<string> Reasons);
 
 public sealed class FairValueEngine
@@ -43,17 +51,20 @@ public sealed class FairValueEngine
             return new FairValueResult(
                 new FairValueRange(null, null, null),
                 dividend, pe, fcf,
+                new ValuationConfidenceMetrics(0, null, null, null, "UNAVAILABLE"),
                 new[] { "Fair value unavailable: no valid valuation method has sufficient data." });
         }
 
         var baseValue = Median(methods)!.Value;
         var conservative = baseValue * conservativeMultiplier;
         var optimistic = baseValue * optimisticMultiplier;
+        var confidence = BuildConfidence(methods, baseValue);
 
         var reasons = new List<string>
         {
             $"Fair value uses {methods.Length} independent valuation method(s).",
-            $"Base fair value {baseValue:F2}; range {conservative:F2}-{optimistic:F2}."
+            $"Base fair value {baseValue:F2}; range {conservative:F2}-{optimistic:F2}.",
+            $"Valuation method spread {confidence.SpreadPercent:F1}% ({confidence.Level})."
         };
 
         if (dividend is not null)
@@ -65,7 +76,7 @@ public sealed class FairValueEngine
 
         return new FairValueResult(
             new FairValueRange(conservative, baseValue, optimistic),
-            dividend, pe, fcf, reasons);
+            dividend, pe, fcf, confidence, reasons);
     }
 
     public static decimal? DividendYieldFairValue(
@@ -92,6 +103,28 @@ public sealed class FairValueEngine
             return null;
 
         return 1m - currentPrice / conservativeFairValue.Value;
+    }
+
+    private static ValuationConfidenceMetrics BuildConfidence(
+        IReadOnlyCollection<decimal> methods,
+        decimal baseValue)
+    {
+        var min = methods.Min();
+        var max = methods.Max();
+        var spreadPercent = baseValue > 0
+            ? (max - min) / baseValue * 100m
+            : null;
+
+        var level = spreadPercent switch
+        {
+            null => "UNAVAILABLE",
+            <= 10m => "STRONG",
+            <= 20m => "MODERATE",
+            _ => "HIGH_DISAGREEMENT"
+        };
+
+        return new ValuationConfidenceMetrics(
+            methods.Count, min, max, spreadPercent, level);
     }
 
     private static decimal? Median(IEnumerable<decimal> values)
