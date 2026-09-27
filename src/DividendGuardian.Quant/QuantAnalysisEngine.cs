@@ -1,3 +1,4 @@
+using System.Globalization;
 using DividendGuardian.Domain;
 
 namespace DividendGuardian.Quant;
@@ -190,21 +191,21 @@ public sealed class QuantAnalysisEngine
     {
         var reasons = new List<string>();
         reasons.Add(historicalYield is not null
-            ? $"Dividend yield {currentYield:F2}% vs historical median {historicalYield:F2}%."
-            : $"Dividend yield {currentYield:F2}%; historical yield baseline unavailable.");
+            ? $"Dividend yield {currentYield.ToString("F2", CultureInfo.InvariantCulture)}% vs historical median {historicalYield.Value.ToString("F2", CultureInfo.InvariantCulture)}%."
+            : $"Dividend yield {currentYield.ToString("F2", CultureInfo.InvariantCulture)}%; historical yield baseline unavailable.");
         if (currentPe is not null && historicalPe is not null)
-            reasons.Add($"PE {currentPe:F2}x vs historical median {historicalPe:F2}x.");
-        if (currentFcfYield is not null) reasons.Add($"FCF yield {currentFcfYield:F2}%.");
-        if (metrics.PayoutRatio is not null) reasons.Add($"Payout ratio {metrics.PayoutRatio:F1}%.");
-        if (metrics.FcfPayoutRatio is not null) reasons.Add($"FCF payout {metrics.FcfPayoutRatio:F1}%.");
-        if (metrics.EpsCagr5Y is not null) reasons.Add($"EPS CAGR 5Y {metrics.EpsCagr5Y:F1}%.");
+            reasons.Add($"PE {currentPe.Value.ToString("F2", CultureInfo.InvariantCulture)}x vs historical median {historicalPe.Value.ToString("F2", CultureInfo.InvariantCulture)}x.");
+        if (currentFcfYield is not null) reasons.Add($"FCF yield {currentFcfYield.Value.ToString("F2", CultureInfo.InvariantCulture)}%.");
+        if (metrics.PayoutRatio is not null) reasons.Add($"Payout ratio {metrics.PayoutRatio.Value.ToString("F1", CultureInfo.InvariantCulture)}%.");
+        if (metrics.FcfPayoutRatio is not null) reasons.Add($"FCF payout {metrics.FcfPayoutRatio.Value.ToString("F1", CultureInfo.InvariantCulture)}%.");
+        if (metrics.EpsCagr5Y is not null) reasons.Add($"EPS CAGR 5Y {metrics.EpsCagr5Y.Value.ToString("F1", CultureInfo.InvariantCulture)}%.");
         if (fairValue.Range.Base is not null)
-            reasons.Add($"Fair value base {fairValue.Range.Base.Value:F2}; range {fairValue.Range.Conservative:F2}-{fairValue.Range.Optimistic:F2}.");
+            reasons.Add($"Fair value base {fairValue.Range.Base.Value.ToString("F2", CultureInfo.InvariantCulture)}; range {fairValue.Range.Conservative!.Value.ToString("F2", CultureInfo.InvariantCulture)}-{fairValue.Range.Optimistic!.Value.ToString("F2", CultureInfo.InvariantCulture)}.");
         else
             reasons.Add("Fair value unavailable: insufficient valuation baseline data.");
         if (marginOfSafety is not null)
-            reasons.Add($"Margin of safety vs conservative fair value {marginOfSafety.Value:P1}.");
-        reasons.Add($"Risk score {riskScore:F1}/15.");
+            reasons.Add($"Margin of safety vs conservative fair value {marginOfSafety.Value.ToString("P1", CultureInfo.InvariantCulture)}.");
+        reasons.Add($"Risk score {riskScore.ToString("F1", CultureInfo.InvariantCulture)}/15.");
         return reasons;
     }
 
