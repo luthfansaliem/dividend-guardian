@@ -26,7 +26,7 @@ public static class TelegramMessageFormatter
             $"🔔 Dividend Guardian — {data.Ticker}",
             $"Run ID: {data.RunId}",
             $"Status: {data.Verdict}",
-            $"Quant Score: {data.QuantScore:F1}/100",
+            $"Quant Score: {data.QuantScore.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}/100",
             $"Price: {data.CurrentPrice:F2}",
             $"Conservative FV: {FormatValue(data.ConservativeFairValue)}",
             $"Base FV: {FormatValue(data.BaseFairValue)}",
