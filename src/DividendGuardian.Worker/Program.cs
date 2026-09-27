@@ -19,6 +19,9 @@ builder.Services.Configure<AiOptions>(o =>
     o.RetryDelayMs = int.TryParse(builder.Configuration["OPENAI_RETRY_DELAY_MS"], out var retryDelay) ? retryDelay : 500;
 });
 
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IOptions<AiOptions>>().Value);
+
 builder.Services.Configure<WorkerOptions>(builder.Configuration.GetSection("Worker"));
 
 builder.Services.Configure<TelegramOptions>(o =>
