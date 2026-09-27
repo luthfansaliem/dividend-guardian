@@ -51,6 +51,16 @@ public sealed class BuyZoneEngineTests
         Assert.Contains(result.Reasons, x => x.Contains("unavailable"));
     }
 
+
+    [Fact]
+    public void Evaluate_CapsStrongAccumulate_WhenValuationMethodsDisagreeHighly()
+    {
+        var result = new BuyZoneEngine().Evaluate(80m, 100m, 110m, 120m, 85m, "HIGH_DISAGREEMENT");
+
+        Assert.Equal("ACCUMULATE", result.Status);
+        Assert.Contains(result.Reasons, x => x.Contains("High valuation-method disagreement"));
+    }
+
     [Fact]
     public void Evaluate_IsDeterministic()
     {
