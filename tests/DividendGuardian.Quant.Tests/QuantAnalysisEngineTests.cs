@@ -10,6 +10,7 @@ public sealed class QuantAnalysisEngineTests
         var engine = new QuantAnalysisEngine();
         var fundamentals = new[]
         {
+            new AnnualFundamentalPoint(2020, 7m, 700m, 900m, 100),
             new AnnualFundamentalPoint(2021, 8m, 800m, 1000m, 100),
             new AnnualFundamentalPoint(2022, 9m, 900m, 1100m, 100),
             new AnnualFundamentalPoint(2023, 10m, 1000m, 1200m, 100),
@@ -18,6 +19,7 @@ public sealed class QuantAnalysisEngineTests
         };
         var dividends = new[]
         {
+            new AnnualDividendPoint(2020, 1.8m),
             new AnnualDividendPoint(2021, 2m),
             new AnnualDividendPoint(2022, 2.2m),
             new AnnualDividendPoint(2023, 2.4m),
@@ -26,6 +28,7 @@ public sealed class QuantAnalysisEngineTests
         };
         var prices = new[]
         {
+            new AnnualPricePoint(2020, 90m),
             new AnnualPricePoint(2021, 100m),
             new AnnualPricePoint(2022, 110m),
             new AnnualPricePoint(2023, 120m),
@@ -57,6 +60,40 @@ public sealed class QuantAnalysisEngineTests
 
         Assert.Contains(result.Reasons, x => x.Contains("Fair value base 146.67"));
         Assert.Contains(result.Reasons, x => x.Contains("Margin of safety"));
+    }
+
+    [Fact]
+    public void Analyze_ClassifiesPartialQuality_WhenFiveYearEpsCagrIsUnavailable()
+    {
+        var input = new QuantAnalysisInput(
+            "TEST", 100m,
+            new[]
+            {
+                new AnnualFundamentalPoint(2022, 8m, 800m, 1000m, 100),
+                new AnnualFundamentalPoint(2023, 9m, 900m, 1100m, 100),
+                new AnnualFundamentalPoint(2024, 10m, 1000m, 1200m, 100),
+                new AnnualFundamentalPoint(2025, 11m, 1100m, 1300m, 100)
+            },
+            new[]
+            {
+                new AnnualDividendPoint(2022, 2m),
+                new AnnualDividendPoint(2023, 2.2m),
+                new AnnualDividendPoint(2024, 2.4m),
+                new AnnualDividendPoint(2025, 2.6m)
+            },
+            new[]
+            {
+                new AnnualPricePoint(2022, 100m),
+                new AnnualPricePoint(2023, 110m),
+                new AnnualPricePoint(2024, 120m),
+                new AnnualPricePoint(2025, 130m)
+            },
+            false);
+
+        var result = new QuantAnalysisEngine().Analyze(input);
+
+        Assert.Null(result.Metrics.EpsCagr5Y);
+        Assert.Equal("PARTIAL", result.DataQuality);
     }
 
     [Fact]
