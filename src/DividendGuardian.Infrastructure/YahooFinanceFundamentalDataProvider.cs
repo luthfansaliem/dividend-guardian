@@ -225,9 +225,17 @@ public sealed class YahooFinanceFundamentalDataProvider(
             if (date < from || date > to)
                 continue;
 
+            // Yahoo exposes dividend cash events by payment/event date, while
+            // valuation needs the dividend attributable to the financial year.
+            // For Indonesian issuers, final dividends are commonly paid in the
+            // first half of the following year and interim dividends in the
+            // second half of the same year. Use that convention consistently
+            // until a source exposes the issuer's fiscal-year attribution.
+            var fiscalYear = date.Month <= 6 ? date.Year - 1 : date.Year;
+
             records.Add(new DividendRecord(
                 ticker.ToUpperInvariant(),
-                date.Year,
+                fiscalYear,
                 amount,
                 date,
                 null));
