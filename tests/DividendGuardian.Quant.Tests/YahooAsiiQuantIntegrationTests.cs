@@ -79,6 +79,20 @@ public sealed class YahooAsiiQuantIntegrationTests
         Console.WriteLine($"ASII.JK dividend yield = {result.CurrentDividendYieldPercent:F2}%");
         Console.WriteLine($"ASII.JK PE = {result.CurrentPe:F2}x");
         Console.WriteLine($"ASII.JK FCF yield = {result.CurrentFcfYieldPercent:F2}%");
+        var fairValueAudit = new FairValueEngine().Calculate(new FairValueInput(
+            annualDividends.Last().Dps,
+            annualFundamentals.Last().Eps,
+            annualFundamentals.Last().FreeCashFlow / annualFundamentals.Last().SharesOutstanding,
+            result.HistoricalMedianDividendYieldPercent,
+            result.HistoricalMedianPe,
+            result.HistoricalMedianFcfYieldPercent));
+
+        Console.WriteLine($"ASII.JK historical median dividend yield = {result.HistoricalMedianDividendYieldPercent:F2}%");
+        Console.WriteLine($"ASII.JK historical median PE = {result.HistoricalMedianPe:F2}x");
+        Console.WriteLine($"ASII.JK historical median FCF yield = {result.HistoricalMedianFcfYieldPercent:F2}%");
+        Console.WriteLine($"ASII.JK dividend fair value = {fairValueAudit.DividendYieldFairValue:F2}");
+        Console.WriteLine($"ASII.JK PE fair value = {fairValueAudit.PeFairValue:F2}");
+        Console.WriteLine($"ASII.JK FCF fair value = {fairValueAudit.FcfFairValue:F2}");
         Console.WriteLine($"ASII.JK fair value conservative = {result.FairValue.Conservative:F2}");
         Console.WriteLine($"ASII.JK fair value base = {result.FairValue.Base:F2}");
         Console.WriteLine($"ASII.JK fair value optimistic = {result.FairValue.Optimistic:F2}");
