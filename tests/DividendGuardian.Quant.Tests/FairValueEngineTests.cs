@@ -60,9 +60,9 @@ public sealed class FairValueEngineTests
             ForwardDps: 10m,
             NormalizedEps: 10m,
             NormalizedFcfPerShare: 10m,
-            HistoricalMedianDividendYieldPercent: 5m,
+            HistoricalMedianDividendYieldPercent: 10m,
             HistoricalMedianPe: 10m,
-            HistoricalMedianFcfYieldPercent: 5m));
+            HistoricalMedianFcfYieldPercent: 10m));
 
         Assert.Equal("STRONG", result.Confidence.Level);
         Assert.Equal(0m, result.Confidence.SpreadPercent);
@@ -75,9 +75,9 @@ public sealed class FairValueEngineTests
             ForwardDps: 10m,
             NormalizedEps: 10.5m,
             NormalizedFcfPerShare: 10m,
-            HistoricalMedianDividendYieldPercent: 5m,
+            HistoricalMedianDividendYieldPercent: 10m,
             HistoricalMedianPe: 10m,
-            HistoricalMedianFcfYieldPercent: 5m));
+            HistoricalMedianFcfYieldPercent: 10m));
 
         Assert.Equal("MODERATE", result.Confidence.Level);
         Assert.Equal(5m, result.Confidence.SpreadPercent);
