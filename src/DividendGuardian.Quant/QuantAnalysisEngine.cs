@@ -133,8 +133,8 @@ public sealed class QuantAnalysisEngine
             metrics.PayoutRatio ?? 100m,
             metrics.FcfPayoutRatio ?? 100m,
             Math.Min(7, metrics.StableOrGrowingYears),
-            metrics.EpsCagr5Y ?? 0m,
-            metrics.EpsCagr3Y ?? 0m,
+            metrics.EpsCagr5Y,
+            metrics.EpsCagr3Y,
             metrics.EarningsConsistencyScore,
             peScore, yieldScore, fcfScore, riskScore);
 
