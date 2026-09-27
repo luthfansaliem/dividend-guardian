@@ -7,6 +7,9 @@ namespace DividendGuardian.Infrastructure;
 public sealed class YahooFinanceFundamentalDataProvider(
     HttpClient httpClient) : IFundamentalDataProvider
 {
+    private const string FundamentalsBaseUrl =
+        "https://query1.finance.yahoo.com/ws/fundamentals-timeseries/v1/finance/timeseries";
+
     public async Task<IReadOnlyCollection<FundamentalRecord>> GetAnnualFundamentalsAsync(
         string ticker,
         DateOnly from,
@@ -19,10 +22,36 @@ public sealed class YahooFinanceFundamentalDataProvider(
         if (from > to)
             throw new ArgumentException("'from' must be before or equal to 'to'.");
 
-        var symbol = Uri.EscapeDataString(ticker.ToUpperInvariant());
+        var symbol = ticker.ToUpperInvariant();
+        var period1 = new DateTimeOffset(
+            from.ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero).ToUnixTimeSeconds();
+        var period2 = new DateTimeOffset(
+            to.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            TimeSpan.Zero).ToUnixTimeSeconds();
+
+        var types = string.Join(",", new[]
+        {
+            "annualTotalRevenue",
+            "annualNetIncome",
+            "annualDilutedEPS",
+            "annualOperatingCashFlow",
+            "annualCapitalExpenditure",
+            "annualFreeCashFlow",
+            "annualCommonStockEquity",
+            "annualTotalDebt",
+            "annualCashCashEquivalentsAndShortTermInvestments",
+            "annualDilutedAverageShares",
+            "annualBasicAverageShares"
+        });
+
         var url =
-            $"https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}" +
-            "?modules=incomeStatementHistory,balanceSheetHistory,cashflowStatementHistory,defaultKeyStatistics";
+            $"{FundamentalsBaseUrl}/{Uri.EscapeDataString(symbol)}" +
+            $"?symbol={Uri.EscapeDataString(symbol)}" +
+            $"&type={Uri.EscapeDataString(types)}" +
+            $"&period1={period1}" +
+            $"&period2={period2}" +
+            "&lang=en-US&region=US&padTimeSeries=true";
 
         using var request = CreateRequest(url);
         using var response = await httpClient.SendAsync(request, ct);
@@ -33,85 +62,83 @@ public sealed class YahooFinanceFundamentalDataProvider(
                 $"Yahoo Finance fundamentals HTTP {(int)response.StatusCode}: {body}");
 
         using var json = JsonDocument.Parse(body);
-        var result = json.RootElement
-            .GetProperty("quoteSummary")
-            .GetProperty("result");
 
-        if (result.ValueKind != JsonValueKind.Array || result.GetArrayLength() == 0)
-            return [];
+        var timeseries = json.RootElement
+            .GetProperty("timeseries");
 
-        var root = result[0];
-        var income = root.GetProperty("incomeStatementHistory").GetProperty("incomeStatementHistory");
-        var balance = root.GetProperty("balanceSheetHistory").GetProperty("balanceSheetStatements");
-        var cashFlow = root.GetProperty("cashflowStatementHistory").GetProperty("cashflowStatements");
-
-        var balanceByDate = balance
-            .EnumerateArray()
-            .Select(x => new { Item = x, Date = GetDate(x, "endDate") })
-            .Where(x => x.Date is not null)
-            .ToDictionary(x => x.Date!.Value, x => x.Item);
-
-        var cashFlowByDate = cashFlow
-            .EnumerateArray()
-            .Select(x => new { Item = x, Date = GetDate(x, "endDate") })
-            .Where(x => x.Date is not null)
-            .ToDictionary(x => x.Date!.Value, x => x.Item);
-
-        var resultRows = new List<FundamentalRecord>();
-
-        foreach (var item in income.EnumerateArray())
+        if (timeseries.TryGetProperty("error", out var error) &&
+            error.ValueKind != JsonValueKind.Null)
         {
-            var periodEnd = GetDate(item, "endDate");
-            if (periodEnd is null || periodEnd < from || periodEnd > to)
-                continue;
-
-            var revenue = GetDecimal(item, "totalRevenue") ?? 0m;
-            var netIncome = GetDecimal(item, "netIncome") ?? 0m;
-            var eps = GetDecimal(item, "dilutedEPS") ?? GetDecimal(item, "basicEPS") ?? 0m;
-
-            decimal equity = 0m;
-            decimal debt = 0m;
-            decimal cash = 0m;
-            decimal fcf = 0m;
-            long shares = 0;
-
-            if (balanceByDate.TryGetValue(periodEnd.Value, out var balanceItem))
-            {
-                equity = GetDecimal(balanceItem, "totalStockholderEquity") ?? 0m;
-                debt = GetDecimal(balanceItem, "totalDebt") ??
-                       GetDecimal(balanceItem, "longTermDebt") ?? 0m;
-                cash = GetDecimal(balanceItem, "cash") ??
-                       GetDecimal(balanceItem, "cashCashEquivalentsAndShortTermInvestments") ?? 0m;
-            }
-
-            if (cashFlowByDate.TryGetValue(periodEnd.Value, out var cashFlowItem))
-            {
-                var operatingCashFlow = GetDecimal(cashFlowItem, "totalCashFromOperatingActivities") ?? 0m;
-                var capitalExpenditure = GetDecimal(cashFlowItem, "capitalExpenditures") ?? 0m;
-                fcf = operatingCashFlow + capitalExpenditure;
-            }
-
-            if (shares == 0)
-                shares = (long)(GetDecimal(item, "weightedAverageSharesDiluted") ??
-                                GetDecimal(item, "weightedAverageSharesBasic") ?? 0m);
-
-            resultRows.Add(new FundamentalRecord(
-                ticker.ToUpperInvariant(),
-                periodEnd.Value,
-                revenue,
-                netIncome,
-                eps,
-                fcf,
-                equity,
-                debt,
-                cash,
-                shares));
+            throw new InvalidOperationException(
+                $"Yahoo Finance fundamentals error: {error}");
         }
 
-        return resultRows
-            .GroupBy(x => x.PeriodEnd)
-            .Select(x => x.First())
-            .OrderBy(x => x.PeriodEnd)
+        var results = timeseries.GetProperty("result");
+        if (results.ValueKind != JsonValueKind.Array)
+            return [];
+
+        var byDate = new Dictionary<DateOnly, FundamentalValues>();
+
+        foreach (var result in results.EnumerateArray())
+        {
+            var seriesName = result
+                .GetProperty("meta")
+                .GetProperty("type")[0]
+                .GetString();
+
+            if (string.IsNullOrWhiteSpace(seriesName))
+                continue;
+
+            if (!result.TryGetProperty(seriesName, out var values) ||
+                values.ValueKind != JsonValueKind.Array)
+                continue;
+
+            foreach (var value in values.EnumerateArray())
+            {
+                if (!value.TryGetProperty("asOfDate", out var dateElement) ||
+                    !DateOnly.TryParse(
+                        dateElement.GetString(),
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out var date) ||
+                    date < from ||
+                    date > to)
+                    continue;
+
+                if (!value.TryGetProperty("reportedValue", out var reported))
+                    continue;
+
+                var number = TryGetDecimal(reported, "raw");
+                if (number is null)
+                    continue;
+
+                if (!byDate.TryGetValue(date, out var current))
+                    current = new FundamentalValues();
+
+                current.Set(seriesName, number.Value);
+                byDate[date] = current;
+            }
+        }
+
+        return byDate
+            .Where(x =>
+                x.Value.Revenue > 0 ||
+                x.Value.NetIncome > 0 ||
+                x.Value.Eps > 0)
+            .OrderBy(x => x.Key)
+            .Select(x => new FundamentalRecord(
+                symbol,
+                x.Key,
+                x.Value.Revenue,
+                x.Value.NetIncome,
+                x.Value.Eps,
+                x.Value.FreeCashFlow != 0
+                    ? x.Value.FreeCashFlow
+                    : x.Value.OperatingCashFlow + x.Value.CapitalExpenditure,
+                x.Value.Equity,
+                x.Value.Debt,
+                x.Value.Cash,
+                x.Value.Shares > 0 ? (long)x.Value.Shares : 0))
             .ToArray();
     }
 
@@ -185,7 +212,11 @@ public sealed class YahooFinanceFundamentalDataProvider(
                 amount <= 0)
                 continue;
 
-            if (!long.TryParse(dividend.Name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timestamp))
+            if (!long.TryParse(
+                    dividend.Name,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var timestamp))
                 continue;
 
             var date = DateOnly.FromDateTime(
@@ -205,7 +236,7 @@ public sealed class YahooFinanceFundamentalDataProvider(
         return records
             .GroupBy(x => x.FiscalYear)
             .Select(g => new DividendRecord(
-                g.Key == 0 ? ticker.ToUpperInvariant() : g.First().Ticker,
+                g.First().Ticker,
                 g.Key,
                 g.Sum(x => x.Dps),
                 g.Max(x => x.PaymentDate),
@@ -217,47 +248,85 @@ public sealed class YahooFinanceFundamentalDataProvider(
     private static HttpRequestMessage CreateRequest(string url)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Mozilla", "5.0"));
+        request.Headers.UserAgent.Add(
+            new ProductInfoHeaderValue("Mozilla", "5.0"));
         request.Headers.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Referrer = new Uri("https://finance.yahoo.com/");
         return request;
     }
 
-    private static DateOnly? GetDate(JsonElement item, string property)
+    private sealed class FundamentalValues
     {
-        if (!item.TryGetProperty(property, out var value))
-            return null;
+        public decimal Revenue { get; private set; }
+        public decimal NetIncome { get; private set; }
+        public decimal Eps { get; private set; }
+        public decimal OperatingCashFlow { get; private set; }
+        public decimal CapitalExpenditure { get; private set; }
+        public decimal FreeCashFlow { get; private set; }
+        public decimal Equity { get; private set; }
+        public decimal Debt { get; private set; }
+        public decimal Cash { get; private set; }
+        public decimal Shares { get; private set; }
 
-        if (value.ValueKind == JsonValueKind.Object &&
-            value.TryGetProperty("raw", out var raw) &&
-            raw.ValueKind == JsonValueKind.Number &&
-            raw.TryGetInt64(out var timestamp))
+        public void Set(string seriesName, decimal value)
         {
-            return DateOnly.FromDateTime(
-                DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime.Date);
+            switch (seriesName)
+            {
+                case "annualTotalRevenue":
+                    Revenue = value;
+                    break;
+                case "annualNetIncome":
+                    NetIncome = value;
+                    break;
+                case "annualDilutedEPS":
+                    Eps = value;
+                    break;
+                case "annualOperatingCashFlow":
+                    OperatingCashFlow = value;
+                    break;
+                case "annualCapitalExpenditure":
+                    CapitalExpenditure = value;
+                    break;
+                case "annualFreeCashFlow":
+                    FreeCashFlow = value;
+                    break;
+                case "annualCommonStockEquity":
+                    Equity = value;
+                    break;
+                case "annualTotalDebt":
+                    Debt = value;
+                    break;
+                case "annualCashCashEquivalentsAndShortTermInvestments":
+                    Cash = value;
+                    break;
+                case "annualDilutedAverageShares":
+                case "annualBasicAverageShares":
+                    if (Shares == 0)
+                        Shares = value;
+                    break;
+            }
         }
-
-        if (value.ValueKind == JsonValueKind.String &&
-            DateOnly.TryParse(
-                value.GetString(),
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out var date))
-            return date;
-
-        return null;
     }
 
-    private static decimal? GetDecimal(JsonElement item, string property)
+    private static decimal? TryGetDecimal(JsonElement item, string property)
     {
         if (!item.TryGetProperty(property, out var value))
             return null;
 
-        if (value.ValueKind == JsonValueKind.Object &&
-            value.TryGetProperty("raw", out var raw))
-            return TryGetDecimal(raw, out var rawValue) ? rawValue : null;
+        if (value.ValueKind == JsonValueKind.Number &&
+            value.TryGetDecimal(out var number))
+            return number;
 
-        return TryGetDecimal(value, out var valueResult) ? valueResult : null;
+        if (value.ValueKind == JsonValueKind.String &&
+            decimal.TryParse(
+                value.GetString(),
+                NumberStyles.Any,
+                CultureInfo.InvariantCulture,
+                out var parsed))
+            return parsed;
+
+        return null;
     }
 
     private static bool TryGetDecimal(JsonElement value, out decimal result)
