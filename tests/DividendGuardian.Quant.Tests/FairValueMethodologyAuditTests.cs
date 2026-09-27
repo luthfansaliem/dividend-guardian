@@ -94,7 +94,23 @@ public sealed class FairValueMethodologyAuditTests
         Assert.Equal(1, result.Confidence.ValidMethodCount);
         Assert.Equal(100m, result.Range.Base);
         Assert.Equal(100m, result.PeFairValue);
-        Assert.Equal("STRONG", result.Confidence.Level);
+        Assert.Equal("SINGLE_METHOD", result.Confidence.Level);
+    }
+
+    [Fact]
+    public void TwoMethods_CloseTogether_AreModerateNotStrong()
+    {
+        var result = new FairValueEngine().Calculate(new FairValueInput(
+            ForwardDps: null,
+            NormalizedEps: 20m,
+            NormalizedFcfPerShare: 21m,
+            HistoricalMedianDividendYieldPercent: null,
+            HistoricalMedianPe: 5m,
+            HistoricalMedianFcfYieldPercent: 10m));
+
+        Assert.Equal(2, result.Confidence.ValidMethodCount);
+        Assert.Equal("MODERATE", result.Confidence.Level);
+        Assert.True(result.Confidence.SpreadPercent <= 10m);
     }
 
     [Fact]
