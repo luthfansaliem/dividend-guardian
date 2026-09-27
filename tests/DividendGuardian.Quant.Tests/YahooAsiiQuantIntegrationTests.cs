@@ -24,6 +24,7 @@ public sealed class YahooAsiiQuantIntegrationTests
         Assert.NotEmpty(fundamentals);
         Assert.NotEmpty(dividends);
         Console.WriteLine($"ASII.JK Yahoo fundamentals years = {string.Join(",", fundamentals.OrderBy(x => x.PeriodEnd).Select(x => $"{x.PeriodEnd:yyyy-MM-dd}:EPS={x.Eps:F2},Shares={x.SharesOutstanding}"))}");
+        Console.WriteLine($"ASII.JK Yahoo dividend records = {string.Join(",", dividends.OrderBy(x => x.FiscalYear).Select(x => $"{x.FiscalYear}:DPS={x.Dps:F2},Date={x.PaymentDate:yyyy-MM-dd}"))}");
 
         var latestPrice = prices.OrderBy(x => x.TradeDate).Last();
         var annualPrices = prices
