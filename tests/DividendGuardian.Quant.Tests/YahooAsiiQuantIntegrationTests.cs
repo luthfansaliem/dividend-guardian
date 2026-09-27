@@ -37,7 +37,7 @@ public sealed class YahooAsiiQuantIntegrationTests
             .Select(x => new AnnualFundamentalPoint(
                 x.PeriodEnd.Year,
                 x.Eps,
-                x.FreeCashFlow / x.SharesOutstanding,
+                x.FreeCashFlow,
                 x.NetIncome,
                 x.SharesOutstanding,
                 x.Debt))
