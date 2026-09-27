@@ -29,7 +29,44 @@ public sealed record QuantAnalysisResult(
     decimal? MarginOfSafety,
     BuyZone BuyZone,
     IReadOnlyList<string> Reasons,
-    string DataQuality);
+    string DataQuality)
+{
+    public QuantAnalysisResult(
+        QuantScore score,
+        DividendQualityMetrics metrics,
+        decimal currentPrice,
+        decimal currentDividendYieldPercent,
+        decimal? historicalMedianDividendYieldPercent,
+        decimal? currentPe,
+        decimal? historicalMedianPe,
+        decimal? currentFcfYieldPercent,
+        decimal? historicalMedianFcfYieldPercent,
+        decimal riskScore,
+        FairValueRange fairValue,
+        decimal? marginOfSafety,
+        BuyZone buyZone,
+        IReadOnlyList<string> reasons,
+        string dataQuality)
+        : this(
+            score,
+            metrics,
+            currentPrice,
+            currentDividendYieldPercent,
+            historicalMedianDividendYieldPercent,
+            currentPe,
+            historicalMedianPe,
+            currentFcfYieldPercent,
+            historicalMedianFcfYieldPercent,
+            riskScore,
+            fairValue,
+            new ValuationConfidenceMetrics(0, null, null, null, "UNKNOWN"),
+            marginOfSafety,
+            buyZone,
+            reasons,
+            dataQuality)
+    {
+    }
+};
 
 public sealed class QuantAnalysisEngine
 {
