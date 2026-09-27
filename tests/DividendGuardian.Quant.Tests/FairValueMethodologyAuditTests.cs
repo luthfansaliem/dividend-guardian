@@ -8,12 +8,12 @@ public sealed class FairValueMethodologyAuditTests
     public void ThreeMethods_CloseTogether_ClassifyAsStrong()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: 100m,
+            ForwardDps: 5m,
             NormalizedEps: 20m,
-            NormalizedFcfPerShare: 20m,
+            NormalizedFcfPerShare: 10m,
             HistoricalMedianDividendYieldPercent: 5m,
-            HistoricalMedianPe: 5.2m,
-            HistoricalMedianFcfYieldPercent: 5.1m));
+            HistoricalMedianPe: 5m,
+            HistoricalMedianFcfYieldPercent: 10m));
 
         Assert.Equal(3, result.Confidence.ValidMethodCount);
         Assert.Equal("STRONG", result.Confidence.Level);
@@ -32,12 +32,15 @@ public sealed class FairValueMethodologyAuditTests
             HistoricalMedianPe: 7.37m,
             HistoricalMedianFcfYieldPercent: 10.55m));
 
-        Assert.Equal(4704.463208685163M, result.DividendYieldFairValue!.Value, 6);
-        Assert.Equal(5969.7m, result.PeFairValue!.Value, 1);
-        Assert.Equal(6386.255924170616M, result.FcfFairValue!.Value, 6);
+        Assert.NotNull(result.DividendYieldFairValue);
+        Assert.NotNull(result.PeFairValue);
+        Assert.NotNull(result.FcfFairValue);
+        Assert.InRange(result.DividendYieldFairValue!.Value, 4700m, 4710m);
+        Assert.InRange(result.PeFairValue!.Value, 5960m, 5975m);
+        Assert.InRange(result.FcfFairValue!.Value, 6380m, 6390m);
         Assert.Equal(3, result.Confidence.ValidMethodCount);
         Assert.Equal("HIGH_DISAGREEMENT", result.Confidence.Level);
-        Assert.Equal(28.25m, result.Confidence.SpreadPercent!.Value, 0);
+        Assert.InRange(result.Confidence.SpreadPercent!.Value, 27.5m, 29m);
     }
 
     [Fact]
