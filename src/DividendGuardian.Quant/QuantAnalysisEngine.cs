@@ -159,7 +159,7 @@ public sealed class QuantAnalysisEngine
             score.TotalScore,
             fairValue.Confidence.Level);
 
-        var dataQuality = DetermineDataQuality(fundamentals, dividends, prices, historicalYield, historicalPe, historicalFcfYield, fairValue);
+        var dataQuality = DetermineDataQuality(fundamentals, dividends, prices, metrics, historicalYield, historicalPe, historicalFcfYield, fairValue);
         var reasons = BuildReasons(currentYield, historicalYield, currentPe, historicalPe,
             currentFcfYield, metrics, riskScore, fairValue, marginOfSafety);
         reasons = reasons.Append($"Data quality {dataQuality}.").ToArray();
@@ -174,6 +174,7 @@ public sealed class QuantAnalysisEngine
         IReadOnlyList<AnnualFundamentalPoint> fundamentals,
         IReadOnlyList<AnnualDividendPoint> dividends,
         IReadOnlyList<AnnualPricePoint> prices,
+        DividendQualityMetrics metrics,
         decimal? historicalYield,
         decimal? historicalPe,
         decimal? historicalFcfYield,
@@ -183,7 +184,7 @@ public sealed class QuantAnalysisEngine
             return "LIMITED";
 
         if (historicalYield is null || historicalPe is null || historicalFcfYield is null ||
-            fairValue.Range.Base is null)
+            fairValue.Range.Base is null || metrics.EpsCagr5Y is null)
             return "PARTIAL";
 
         return "READY";
