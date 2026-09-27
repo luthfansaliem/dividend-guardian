@@ -11,7 +11,7 @@ public sealed class BuyZoneEngineTests
 
         Assert.Equal("STRONG_ACCUMULATE", result.Status);
         Assert.Equal(0.20m, result.MarginOfSafety);
-        Assert.Equal(5, result.Reasons.Count);
+        Assert.Equal(6, result.Reasons.Count);
     }
 
     [Fact]
