@@ -115,12 +115,17 @@ public sealed class FairValueEngine
             ? (max - min) / baseValue * 100m
             : null;
 
-        var level = spreadPercent switch
+        var level = methods.Count switch
         {
-            null => "UNAVAILABLE",
-            <= 10m => "STRONG",
-            <= 20m => "MODERATE",
-            _ => "HIGH_DISAGREEMENT"
+            0 => "UNAVAILABLE",
+            1 => "SINGLE_METHOD",
+            _ => spreadPercent switch
+            {
+                null => "UNAVAILABLE",
+                <= 10m when methods.Count >= 3 => "STRONG",
+                <= 20m => "MODERATE",
+                _ => "HIGH_DISAGREEMENT"
+            }
         };
 
         return new ValuationConfidenceMetrics(
