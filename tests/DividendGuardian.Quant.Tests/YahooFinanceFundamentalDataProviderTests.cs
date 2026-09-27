@@ -20,16 +20,13 @@ public sealed class YahooFinanceFundamentalDataProviderTests
         var byYear = dividends.ToDictionary(x => x.FiscalYear);
 
         Assert.True(byYear.TryGetValue(2025, out var dividend2025));
-        Assert.True(byYear.TryGetValue(2026, out var dividend2026));
+        Assert.False(byYear.ContainsKey(2026));
 
-        // ASII cash dividends paid in calendar 2025 were Rp308 + Rp98 = Rp406/share.
-        Assert.Equal(406m, dividend2025!.Dps);
+        // Yahoo dividend events are attributed to the Indonesian fiscal year:
+        // the May 2026 event belongs to FY2025 together with the 2025 interim dividend.
+        Assert.Equal(390m, dividend2025!.Dps);
 
-        // ASII cash dividend paid in calendar 2026 was Rp292/share.
-        Assert.Equal(292m, dividend2026!.Dps);
-
-        Console.WriteLine($"ASII 2025 calendar-year DPS={dividend2025.Dps}");
-        Console.WriteLine($"ASII 2026 calendar-year DPS={dividend2026.Dps}");
+        Console.WriteLine($"ASII FY2025 DPS={dividend2025.Dps}");
     }
 
     [Fact]
