@@ -35,7 +35,7 @@ public static class DeterministicAiFallback
 
     private static string BuildWhyAccumulate(QuantAnalysisResult quant) =>
         $"Deterministic Quant status is {quant.BuyZone.Status}; " +
-        $"Quant score is {quant.Score.TotalScore:F1}/100 and " +
+        $"Quant score is {quant.Score.TotalScore.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}/100 and " +
         $"margin of safety is {(quant.MarginOfSafety is null ? "unavailable" : quant.MarginOfSafety.Value.ToString("P1"))}. " +
         "No additional AI interpretation is available.";
 
