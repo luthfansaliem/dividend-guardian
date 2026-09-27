@@ -110,6 +110,17 @@ public sealed class YahooAsiiQuantIntegrationTests
         Console.WriteLine($"ASII.JK margin of safety = {result.MarginOfSafety:P1}");
         Console.WriteLine($"ASII.JK buy zone = {result.BuyZone.Status}");
         Console.WriteLine($"ASII.JK score = {result.Score.TotalScore:F1}");
+        Console.WriteLine($"ASII.JK score yield = {result.Score.YieldScore:F1}/15");
+        Console.WriteLine($"ASII.JK score sustainability = {result.Score.SustainabilityScore:F1}/25");
+        Console.WriteLine($"ASII.JK score growth = {result.Score.GrowthScore:F1}/20");
+        Console.WriteLine($"ASII.JK score valuation = {result.Score.ValuationScore:F1}/25");
+        Console.WriteLine($"ASII.JK score risk = {result.Score.RiskScore:F1}/15");
+        Console.WriteLine($"ASII.JK payout ratio = {result.Metrics.PayoutRatio:F1}%");
+        Console.WriteLine($"ASII.JK FCF payout ratio = {result.Metrics.FcfPayoutRatio:F1}%");
+        Console.WriteLine($"ASII.JK EPS CAGR 5Y = {result.Metrics.EpsCagr5Y:F1}%");
+        Console.WriteLine($"ASII.JK EPS CAGR 3Y = {result.Metrics.EpsCagr3Y:F1}%");
+        Console.WriteLine($"ASII.JK earnings consistency = {result.Metrics.EarningsConsistencyScore:F1}");
+        Console.WriteLine($"ASII.JK valuation confidence = {result.ValuationConfidence.Level}; spread = {result.ValuationConfidence.SpreadPercent:F1}%");
         Console.WriteLine($"ASII.JK data quality = {result.DataQuality}");
     }
 }
