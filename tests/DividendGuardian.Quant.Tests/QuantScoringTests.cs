@@ -14,8 +14,8 @@ public sealed class QuantScoringTests
         => Assert.Equal(25m,QuantScoringEngine.ScoreSustainability(40m,40m,10));
 
     [Fact]
-    public void GrowthDoesNotAwardGrowthPointsForMissingCagr()
-        => Assert.Equal(8.3m, QuantScoringEngine.ScoreGrowth(null, 4.2m, 8.3m));
+    public void GrowthDoesNotAwardFiveYearGrowthPointsForMissingCagr()
+        => Assert.Equal(10.3m, QuantScoringEngine.ScoreGrowth(null, 4.2m, 8.3m));
 
     [Fact]
     public void GrowthAwardsExpectedPointsForKnownCagr()
