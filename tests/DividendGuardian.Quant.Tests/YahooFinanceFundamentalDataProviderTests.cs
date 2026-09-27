@@ -22,11 +22,14 @@ public sealed class YahooFinanceFundamentalDataProviderTests
         Assert.True(byYear.TryGetValue(2025, out var dividend2025));
         Assert.True(byYear.TryGetValue(2026, out var dividend2026));
 
-        Assert.Equal(98m, dividend2025!.Dps);
+        // ASII cash dividends paid in calendar 2025 were Rp308 + Rp98 = Rp406/share.
+        Assert.Equal(406m, dividend2025!.Dps);
+
+        // ASII cash dividend paid in calendar 2026 was Rp292/share.
         Assert.Equal(292m, dividend2026!.Dps);
 
-        Console.WriteLine($"ASII 2025 DPS={dividend2025.Dps}, date={dividend2025.PaymentDate}");
-        Console.WriteLine($"ASII 2026 DPS={dividend2026.Dps}, date={dividend2026.PaymentDate}");
+        Console.WriteLine($"ASII 2025 calendar-year DPS={dividend2025.Dps}");
+        Console.WriteLine($"ASII 2026 calendar-year DPS={dividend2026.Dps}");
     }
 
     [Fact]
