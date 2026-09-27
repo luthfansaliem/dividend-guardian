@@ -78,13 +78,21 @@ builder.Services.AddSingleton<IMarketDataProvider>(sp =>
 builder.Services.AddSingleton<FundamentalDataRepository>();
 builder.Services.AddSingleton<FundamentalCollector>();
 builder.Services.AddHttpClient<TwelveDataFundamentalDataProvider>();
+builder.Services.AddHttpClient<YahooFinanceFundamentalDataProvider>();
+
 builder.Services.AddSingleton<IFundamentalDataProvider>(sp =>
 {
     var options = sp.GetRequiredService<IOptions<FundamentalDataOptions>>();
+
+    if (options.Value.Provider.Equals("yahoo", StringComparison.OrdinalIgnoreCase))
+        return sp.GetRequiredService<YahooFinanceFundamentalDataProvider>();
+
     if (options.Value.Provider.Equals("twelvedata", StringComparison.OrdinalIgnoreCase))
         return sp.GetRequiredService<TwelveDataFundamentalDataProvider>();
+
     if (options.Value.Provider.Equals("csv", StringComparison.OrdinalIgnoreCase))
         return new CsvFundamentalDataProvider(options);
+
     return new NotConfiguredFundamentalDataProvider();
 });
 
