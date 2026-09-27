@@ -103,13 +103,21 @@ public sealed class QuantAnalysisEngine
 
         var historicalYield = Median(
             dividends.Join(prices, d => d.Year, p => p.Year,
-                (d, p) => d.Dps / p.Close * 100m).Where(x => x > 0));
+                (d, p) => new { d.Year, Yield = d.Dps / p.Close * 100m })
+            .Where(x => x.Yield > 0)
+            .OrderBy(x => x.Year)
+            .TakeLast(5)
+            .Select(x => x.Yield));
 
         decimal? currentPe = latest.Eps > 0 ? (decimal?)(input.CurrentPrice / latest.Eps) : null;
 
         var historicalPe = Median(
             fundamentals.Join(prices, f => f.Year, p => p.Year,
-                (f, p) => f.Eps > 0 ? p.Close / f.Eps : 0m).Where(x => x > 0));
+                (f, p) => new { f.Year, Value = f.Eps > 0 ? p.Close / f.Eps : 0m })
+            .Where(x => x.Value > 0)
+            .OrderBy(x => x.Year)
+            .TakeLast(5)
+            .Select(x => x.Value));
 
         decimal? currentFcfYield = latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
             ? (decimal?)(latest.FreeCashFlow / (input.CurrentPrice * latest.SharesOutstanding) * 100m)
@@ -117,9 +125,17 @@ public sealed class QuantAnalysisEngine
 
         var historicalFcfYield = Median(
             fundamentals.Join(prices, f => f.Year, p => p.Year,
-                (f, p) => f.FreeCashFlow > 0 && f.SharesOutstanding > 0
-                    ? f.FreeCashFlow / (p.Close * f.SharesOutstanding) * 100m
-                    : 0m).Where(x => x > 0));
+                (f, p) => new
+                {
+                    f.Year,
+                    Value = f.FreeCashFlow > 0 && f.SharesOutstanding > 0
+                        ? f.FreeCashFlow / (p.Close * f.SharesOutstanding) * 100m
+                        : 0m
+                })
+            .Where(x => x.Value > 0)
+            .OrderBy(x => x.Year)
+            .TakeLast(5)
+            .Select(x => x.Value));
 
         var peScore = ScorePe(currentPe, historicalPe);
         var yieldScore = ScoreRelative(currentYield, historicalYield, 8m);
