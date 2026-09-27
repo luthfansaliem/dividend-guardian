@@ -12,4 +12,12 @@ public sealed class QuantScoringTests
 
     [Fact] public void SustainabilityIsCappedAt25()
         => Assert.Equal(25m,QuantScoringEngine.ScoreSustainability(40m,40m,10));
+
+    [Fact]
+    public void GrowthDoesNotAwardGrowthPointsForMissingCagr()
+        => Assert.Equal(8.3m, QuantScoringEngine.ScoreGrowth(null, 4.2m, 8.3m));
+
+    [Fact]
+    public void GrowthAwardsExpectedPointsForKnownCagr()
+        => Assert.Equal(13.3m, QuantScoringEngine.ScoreGrowth(4.2m, 4.2m, 8.3m));
 }
