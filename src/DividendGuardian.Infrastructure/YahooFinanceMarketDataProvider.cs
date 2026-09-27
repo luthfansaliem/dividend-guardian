@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace DividendGuardian.Infrastructure;
@@ -36,7 +37,12 @@ public sealed class YahooFinanceMarketDataProvider(
             "&events=history" +
             "&includeAdjustedClose=true";
 
-        using var response = await httpClient.GetAsync(uri, ct);
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Mozilla", "5.0"));
+        request.Headers.Accept.Add(
+            new MediaTypeWithQualityHeaderValue("application/json"));
+
+        using var response = await httpClient.SendAsync(request, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)
