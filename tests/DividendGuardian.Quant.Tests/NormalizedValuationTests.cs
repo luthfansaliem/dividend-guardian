@@ -27,18 +27,11 @@ public sealed class NormalizedValuationTests
 
         var result = NormalizedValuationEngine.Calculate(fundamentals, dividends);
 
-        // Shared latest window is 2023-2025.
         Assert.Equal(3, result.YearCount);
         Assert.Equal(2023, result.StartYear);
         Assert.Equal(2025, result.EndYear);
-
-        // DPS = 519, 406, 390 -> median 406.
         Assert.Equal(406m, result.MedianDps);
-
-        // EPS = 836, 837, 810 -> median 836.
         Assert.Equal(836m, result.MedianEps);
-
-        // FCF/share = 7, 9, 8 -> median 8.
         Assert.Equal(8m, result.MedianFcfPerShare);
     }
 
@@ -65,6 +58,33 @@ public sealed class NormalizedValuationTests
 
         Assert.Equal(406m, result.MedianDps);
         Assert.NotEqual(640m, result.MedianDps);
+    }
+
+    [Fact]
+    public void Asii_UsesThreeYearNormalizedInputsFromSharedFiscalYears()
+    {
+        var fundamentals = new[]
+        {
+            new AnnualFundamentalPoint(2023, 836m, 12_062m, 33_839m, 40_484_000_000),
+            new AnnualFundamentalPoint(2024, 837m, 28_803m, 33_901m, 40_484_000_000),
+            new AnnualFundamentalPoint(2025, 810m, 27_254m, 32_769m, 40_451_000_000)
+        };
+
+        var dividends = new[]
+        {
+            new AnnualDividendPoint(2023, 519m),
+            new AnnualDividendPoint(2024, 406m),
+            new AnnualDividendPoint(2025, 390m)
+        };
+
+        var result = NormalizedValuationEngine.Calculate(fundamentals, dividends);
+
+        Assert.Equal(3, result.YearCount);
+        Assert.Equal(2023, result.StartYear);
+        Assert.Equal(2025, result.EndYear);
+        Assert.Equal(406m, result.MedianDps);
+        Assert.Equal(836m, result.MedianEps);
+        Assert.InRange(result.MedianFcfPerShare!.Value, 673.7m, 673.8m);
     }
 
     [Fact]
