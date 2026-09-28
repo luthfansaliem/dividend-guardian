@@ -15,6 +15,7 @@ builder.Services.Configure<AiOptions>(o =>
     o.ApiKey = builder.Configuration["OPENAI_API_KEY"] ?? "";
     o.Model = builder.Configuration["OPENAI_MODEL"] ?? "gpt-5.6-luna";
     o.MaxAnalysesPerDay = int.TryParse(builder.Configuration["OPENAI_MAX_ANALYSES_PER_DAY"], out var maxAnalyses) ? maxAnalyses : 10;
+    o.ForceAnalysis = bool.TryParse(builder.Configuration["AI_FORCE_ANALYSIS"], out var forceAnalysis) && forceAnalysis;
     o.MaxRetries = int.TryParse(builder.Configuration["OPENAI_MAX_RETRIES"], out var retries) ? retries : 2;
     o.RetryDelayMs = int.TryParse(builder.Configuration["OPENAI_RETRY_DELAY_MS"], out var retryDelay) ? retryDelay : 500;
 });
