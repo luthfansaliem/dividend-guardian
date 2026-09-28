@@ -103,7 +103,7 @@ public sealed class FairValueMethodologyAuditTests
         var result = new FairValueEngine().Calculate(new FairValueInput(
             ForwardDps: null,
             NormalizedEps: 20m,
-            NormalizedFcfPerShare: 21m,
+            NormalizedFcfPerShare: 10.5m,
             HistoricalMedianDividendYieldPercent: null,
             HistoricalMedianPe: 5m,
             HistoricalMedianFcfYieldPercent: 10m));
