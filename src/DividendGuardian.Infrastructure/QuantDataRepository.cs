@@ -34,6 +34,7 @@ public sealed class QuantDataRepository(Database database)
         if (currentPrice is null) return null;
 
         var fundamentals = await LoadFundamentalsAsync(connection, ticker, ct);
+        var fundamentalCurrency = await LoadFundamentalCurrencyAsync(connection, ticker, ct);
         var dividends = await LoadDividendsAsync(connection, ticker, ct);
         var yearEndPrices = await LoadYearEndPricesAsync(connection, ticker, analysisDate, ct);
 
@@ -48,7 +49,9 @@ public sealed class QuantDataRepository(Database database)
             fundamentals,
             dividends,
             yearEndPrices,
-            isCyclical);
+            isCyclical,
+            fundamentalCurrency,
+            "IDR");
     }
 
     private static async Task<decimal?> LoadCurrentPriceAsync(
@@ -97,6 +100,22 @@ public sealed class QuantDataRepository(Database database)
                 reader.IsDBNull(5) ? 0m : reader.GetDecimal(5)));
         }
         return result;
+    }
+
+    private static async Task<string?> LoadFundamentalCurrencyAsync(
+        NpgsqlConnection connection, string ticker, CancellationToken ct)
+    {
+        const string sql = """
+            select currency
+            from fundamentals
+            where ticker=@ticker and currency is not null
+            order by period_end desc
+            limit 1;
+            """;
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("ticker", ticker);
+        var value = await command.ExecuteScalarAsync(ct);
+        return value is null or DBNull ? null : Convert.ToString(value);
     }
 
     private static async Task<IReadOnlyList<AnnualDividendPoint>> LoadDividendsAsync(
