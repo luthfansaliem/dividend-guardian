@@ -62,7 +62,8 @@ public sealed class AiAnalysisCycleOrchestrator(
                     previous,
                     occurredAt);
 
-                if (!triggerPolicy.ShouldAnalyzeFromState(
+                if (!aiOptions.Value.ForceAnalysis &&
+                    !triggerPolicy.ShouldAnalyzeFromState(
                         item.Result,
                         previous,
                         triggers,
@@ -86,8 +87,9 @@ public sealed class AiAnalysisCycleOrchestrator(
                 }
 
                 logger.LogInformation(
-                    "AI analysis attempt started. TriggerCount={TriggerCount}",
-                    triggers.Count);
+                    "AI analysis attempt started. TriggerCount={TriggerCount}, Forced={Forced}",
+                    triggers.Count,
+                    aiOptions.Value.ForceAnalysis);
 
                 var request = new AiAnalysisRequest(
                     item.Ticker,
