@@ -43,9 +43,10 @@ public sealed class FairValueEngineTests
 
         // Method values: 200, 120, 160. Median = 160.
         // Default range multipliers are 0.90x and 1.10x.
-        Assert.Equal(144m, result.Range.Conservative);
+        // With high disagreement, the range is anchored to the actual method extremes.
+        Assert.Equal(120m, result.Range.Conservative);
         Assert.Equal(160m, result.Range.Base);
-        Assert.Equal(176m, result.Range.Optimistic);
+        Assert.Equal(200m, result.Range.Optimistic);
         Assert.Equal(3, result.Confidence.ValidMethodCount);
         Assert.Equal(120m, result.Confidence.MinFairValue);
         Assert.Equal(200m, result.Confidence.MaxFairValue);
