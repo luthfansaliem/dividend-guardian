@@ -22,7 +22,8 @@ public sealed class YahooFinanceFundamentalDataProvider(
         if (from > to)
             throw new ArgumentException("'from' must be before or equal to 'to'.");
 
-        var symbol = ticker.ToUpperInvariant();
+        var normalizedTicker = ticker.ToUpperInvariant();
+        var symbol = ToYahooSymbol(normalizedTicker);
         var period1 = new DateTimeOffset(
             from.ToDateTime(TimeOnly.MinValue),
             TimeSpan.Zero).ToUnixTimeSeconds();
@@ -81,10 +82,16 @@ public sealed class YahooFinanceFundamentalDataProvider(
 
         foreach (var result in results.EnumerateArray())
         {
-            var seriesName = result
-                .GetProperty("meta")
-                .GetProperty("type")[0]
-                .GetString();
+            if (result.ValueKind != JsonValueKind.Object ||
+                !result.TryGetProperty("meta", out var meta) ||
+                meta.ValueKind != JsonValueKind.Object ||
+                !meta.TryGetProperty("type", out var type) ||
+                type.ValueKind != JsonValueKind.Array ||
+                type.GetArrayLength() == 0 ||
+                type[0].ValueKind != JsonValueKind.String)
+                continue;
+
+            var seriesName = type[0].GetString();
 
             if (string.IsNullOrWhiteSpace(seriesName))
                 continue;
@@ -127,7 +134,7 @@ public sealed class YahooFinanceFundamentalDataProvider(
                 x.Value.Eps > 0)
             .OrderBy(x => x.Key)
             .Select(x => new FundamentalRecord(
-                symbol,
+                normalizedTicker,
                 x.Key,
                 x.Value.Revenue,
                 x.Value.NetIncome,
@@ -162,7 +169,8 @@ public sealed class YahooFinanceFundamentalDataProvider(
             to.AddDays(1).ToDateTime(TimeOnly.MinValue),
             TimeSpan.Zero).ToUnixTimeSeconds();
 
-        var symbol = Uri.EscapeDataString(ticker.ToUpperInvariant());
+        var normalizedTicker = ticker.ToUpperInvariant();
+        var symbol = Uri.EscapeDataString(ToYahooSymbol(normalizedTicker));
         var url =
             $"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}" +
             $"?period1={period1}" +
@@ -234,7 +242,7 @@ public sealed class YahooFinanceFundamentalDataProvider(
             var fiscalYear = date.Month <= 6 ? date.Year - 1 : date.Year;
 
             records.Add(new DividendRecord(
-                ticker.ToUpperInvariant(),
+                normalizedTicker,
                 fiscalYear,
                 amount,
                 date,
@@ -252,6 +260,9 @@ public sealed class YahooFinanceFundamentalDataProvider(
             .OrderBy(x => x.FiscalYear)
             .ToArray();
     }
+
+    private static string ToYahooSymbol(string ticker) =>
+        ticker.Contains('.') ? ticker : $"{ticker}.JK";
 
     private static HttpRequestMessage CreateRequest(string url)
     {
