@@ -24,8 +24,11 @@ public static class TelegramMessageFormatter
         var lines = new List<string>
         {
             $"🔔 Dividend Guardian — {data.Ticker}",
+            $"🎯 ACTION: {GetAction(data)}",
+            $"Next: {GetNextAction(data)}",
+            "",
             $"Run ID: {data.RunId}",
-            $"Status: {data.Verdict}",
+            $"AI Assessment: {data.Verdict}",
             $"Quant Score: {data.QuantScore.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}/100",
             $"Price: {data.CurrentPrice:F2}",
             $"Conservative FV: {FormatValue(data.ConservativeFairValue)}",
@@ -33,10 +36,13 @@ public static class TelegramMessageFormatter
             $"Margin of Safety: {FormatPercent(data.MarginOfSafety)}",
             $"Data Quality: {data.DataQuality}",
             "",
-            "WHY ACCUMULATE",
+            "WHY?",
+            BuildWhy(data),
+            "",
+            "AI — WHY ACCUMULATE",
             data.WhyAccumulate,
             "",
-            "WHY NOT ACCUMULATE",
+            "AI — WHY NOT ACCUMULATE",
             data.WhyNotAccumulate
         };
 
@@ -57,6 +63,44 @@ public static class TelegramMessageFormatter
         $"🛡 DIVIDEND GUARDIAN{Environment.NewLine}{Environment.NewLine}" +
         $"{ticker} — {status}{Environment.NewLine}" +
         $"Score: {score:0.0}/100{Environment.NewLine}{Environment.NewLine}{summary}";
+
+    private static string GetAction(TelegramAlertData data)
+    {
+        if (data.DataQuality.Equals("INCONSISTENT", StringComparison.OrdinalIgnoreCase))
+            return "REVIEW DATA — jangan gunakan alert ini untuk keputusan investasi";
+
+        if (data.ConservativeFairValue is null || data.BaseFairValue is null)
+            return "WAIT — fair value belum cukup reliable";
+
+        if (data.MarginOfSafety is < 0)
+            return "WAIT — harga belum masuk conservative value";
+
+        return data.QuantScore >= 70m
+            ? "REVIEW OPPORTUNITY — cek thesis sebelum keputusan"
+            : "WAIT — Quant belum cukup kuat";
+    }
+
+    private static string GetNextAction(TelegramAlertData data)
+    {
+        if (data.DataQuality.Equals("INCONSISTENT", StringComparison.OrdinalIgnoreCase))
+            return "Validasi fundamental/unit data lalu jalankan Quant ulang.";
+        if (data.ConservativeFairValue is null || data.BaseFairValue is null)
+            return "Lengkapi baseline valuasi lalu jalankan analisis ulang.";
+        if (data.MarginOfSafety is < 0)
+            return "Pantau sampai valuasi/margin of safety membaik.";
+        return "Review WHY/risks di bawah sebelum mengambil keputusan.";
+    }
+
+    private static string BuildWhy(TelegramAlertData data)
+    {
+        if (data.DataQuality.Equals("INCONSISTENT", StringComparison.OrdinalIgnoreCase))
+            return "Input fundamental gagal sanity check; metrik valuation/payout yang bergantung pada unit tersebut tidak dipercaya.";
+        if (data.ConservativeFairValue is null || data.BaseFairValue is null)
+            return "Fair value belum tersedia sehingga harga belum dapat dibandingkan dengan valuation range secara memadai.";
+        if (data.MarginOfSafety is < 0)
+            return "Harga berada di atas conservative fair value.";
+        return $"Quant score {data.QuantScore:F1}/100 dengan data quality {data.DataQuality}.";
+    }
 
     private static void AddSection(List<string> lines, string title, IReadOnlyList<string> values)
     {
