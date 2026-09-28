@@ -167,15 +167,16 @@ public sealed class QuantAnalysisEngine
         var marginOfSafety = FairValueEngine.MarginOfSafety(
             input.CurrentPrice, fairValue.Range.Conservative);
 
+        var dataQuality = DetermineDataQuality(fundamentals, dividends, prices, metrics, historicalYield, historicalPe, historicalFcfYield, fairValue);
+
         var buyZone = _buyZone.Evaluate(
             input.CurrentPrice,
             fairValue.Range.Conservative,
             fairValue.Range.Base,
             fairValue.Range.Optimistic,
             score.TotalScore,
-            fairValue.Confidence.Level);
-
-        var dataQuality = DetermineDataQuality(fundamentals, dividends, prices, metrics, historicalYield, historicalPe, historicalFcfYield, fairValue);
+            fairValue.Confidence.Level,
+            dataQuality);
         var reasons = BuildReasons(currentYield, historicalYield, currentPe, historicalPe,
             currentFcfYield, metrics, riskScore, fairValue, marginOfSafety);
         reasons = reasons.Append($"Data quality {dataQuality}.").ToArray();
