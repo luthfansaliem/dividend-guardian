@@ -40,7 +40,14 @@ public sealed class MarketDataRepository(Database database)
         await using var command = new NpgsqlCommand(sql, connection);
         command.Parameters.AddWithValue("ticker", ticker);
         var value = await command.ExecuteScalarAsync(ct);
-        return value is null or DBNull ? null : DateOnly.FromDateTime(Convert.ToDateTime(value));
+        return value switch
+        {
+            null or DBNull => null,
+            DateOnly date => date,
+            DateTime dateTime => DateOnly.FromDateTime(dateTime),
+            _ => throw new InvalidOperationException(
+                $"Unexpected database date type: {value.GetType().FullName}.")
+        };
     }
 
     public async Task RecordIngestionAsync(string provider, string ticker, DateOnly from, DateOnly to, int rows, string status, string? error, CancellationToken ct = default)
