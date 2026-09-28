@@ -101,10 +101,10 @@ builder.Services.AddSingleton<IFundamentalDataProvider>(sp =>
 });
 
 builder.Services.AddSingleton<QuantAnalysisEngine>();
-builder.Services.AddHttpClient<YahooFinanceFxRateProvider>(client =>
-    client.BaseAddress = new Uri("https://query1.finance.yahoo.com/"));
+builder.Services.AddHttpClient<FrankfurterFxRateProvider>(client =>
+    client.BaseAddress = new Uri("https://api.frankfurter.dev/"));
 builder.Services.AddSingleton<IFxRateProvider>(sp =>
-    sp.GetRequiredService<YahooFinanceFxRateProvider>());
+    sp.GetRequiredService<FrankfurterFxRateProvider>());
 builder.Services.AddSingleton<QuantDataRepository>();
 builder.Services.AddSingleton<QuantAnalysisRepository>();
 builder.Services.AddSingleton<QuantAnalysisOrchestrator>();
