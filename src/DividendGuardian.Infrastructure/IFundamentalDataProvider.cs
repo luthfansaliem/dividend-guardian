@@ -2,7 +2,7 @@ namespace DividendGuardian.Infrastructure;
 
 public sealed record FundamentalRecord(
     string Ticker, DateOnly PeriodEnd, decimal Revenue, decimal NetIncome, decimal Eps,
-    decimal FreeCashFlow, decimal Equity, decimal Debt, decimal Cash, long SharesOutstanding);
+    decimal FreeCashFlow, decimal Equity, decimal Debt, decimal Cash, long SharesOutstanding, string? Currency = null);
 
 public sealed record DividendRecord(
     string Ticker, int FiscalYear, decimal Dps, DateOnly? PaymentDate, decimal? PayoutRatio);
