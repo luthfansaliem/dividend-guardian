@@ -42,6 +42,6 @@ public sealed class QuantScoringTests
         // Quant status measures overall quality/score thresholds.
         // BuyZone is a separate price-vs-fair-value decision layer.
         Assert.Equal(72.9m, score.TotalScore);
-        Assert.Equal(AnalysisStatus.Watch, score.Status);
+        Assert.Equal("Watch", score.Status.ToString());
     }
 }
