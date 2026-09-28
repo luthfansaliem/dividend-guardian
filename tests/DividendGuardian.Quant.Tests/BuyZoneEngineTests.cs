@@ -125,8 +125,6 @@ public sealed class BuyZoneEngineTests
         Assert.InRange(result.MarginOfSafety!.Value, 0.1265m, 0.1268m);
         Assert.Contains(result.Reasons, x => x.Contains("disagree materially"));
     }
-}
-
 
     [Fact]
     public void Evaluate_ReturnsWatch_WhenPartialDataAndHighDisagreement()
@@ -161,3 +159,5 @@ public sealed class BuyZoneEngineTests
         Assert.Equal(0.20m, result.MarginOfSafety);
         Assert.Contains(result.Reasons, x => x.Contains("Limited data quality"));
     }
+
+}
