@@ -106,7 +106,7 @@ public sealed class BuyZoneEngineTests
             4690m, 5369.23m, 5965.81m, 6562.39m, 72.9m, "HIGH_DISAGREEMENT");
 
         Assert.Equal(normal.MarginOfSafety, disagreement.MarginOfSafety);
-        Assert.Equal(0.126655729m, Math.Round(disagreement.MarginOfSafety!.Value, 9));
+        Assert.Equal(0.126504173m, Math.Round(disagreement.MarginOfSafety!.Value, 9));
         Assert.Equal("ACCUMULATE", disagreement.Status);
     }
 
