@@ -11,7 +11,7 @@ public sealed class BuyZoneEngineTests
 
         Assert.Equal("STRONG_ACCUMULATE", result.Status);
         Assert.Equal(0.20m, result.MarginOfSafety);
-        Assert.Equal(6, result.Reasons.Count);
+        Assert.Equal(7, result.Reasons.Count);
     }
 
     [Fact]
@@ -126,3 +126,38 @@ public sealed class BuyZoneEngineTests
         Assert.Contains(result.Reasons, x => x.Contains("disagree materially"));
     }
 }
+
+
+    [Fact]
+    public void Evaluate_ReturnsWatch_WhenPartialDataAndHighDisagreement()
+    {
+        var result = new BuyZoneEngine().Evaluate(
+            currentPrice: 4690m,
+            conservative: 5369.23m,
+            baseValue: 5965.81m,
+            optimistic: 6562.39m,
+            quantScore: 72.9m,
+            valuationConfidenceLevel: "HIGH_DISAGREEMENT",
+            dataQuality: "PARTIAL");
+
+        Assert.Equal("WATCH", result.Status);
+        Assert.InRange(result.MarginOfSafety!.Value, 0.1265m, 0.1268m);
+        Assert.Contains(result.Reasons, x => x.Contains("Partial data quality"));
+    }
+
+    [Fact]
+    public void Evaluate_ReturnsWatch_WhenDataIsLimited()
+    {
+        var result = new BuyZoneEngine().Evaluate(
+            currentPrice: 80m,
+            conservative: 100m,
+            baseValue: 110m,
+            optimistic: 120m,
+            quantScore: 85m,
+            valuationConfidenceLevel: "STRONG",
+            dataQuality: "LIMITED");
+
+        Assert.Equal("WATCH", result.Status);
+        Assert.Equal(0.20m, result.MarginOfSafety);
+        Assert.Contains(result.Reasons, x => x.Contains("Limited data quality"));
+    }
