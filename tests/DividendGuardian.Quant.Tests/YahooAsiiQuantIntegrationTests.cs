@@ -1,3 +1,4 @@
+using System.Globalization;
 using DividendGuardian.Infrastructure;
 using DividendGuardian.Quant;
 
@@ -122,7 +123,7 @@ public sealed class YahooAsiiQuantIntegrationTests
         Console.WriteLine($"ASII.JK score risk = {result.Score.RiskScore:F1}/15");
         Console.WriteLine($"ASII.JK payout ratio = {result.Metrics.PayoutRatio:F1}%");
         Console.WriteLine($"ASII.JK FCF payout ratio = {result.Metrics.FcfPayoutRatio:F1}%");
-        Console.WriteLine($"ASII.JK EPS CAGR 5Y = {result.Metrics.EpsCagr5Y:F1}%");
+        Console.WriteLine($"ASII.JK EPS CAGR 5Y = {(result.Metrics.EpsCagr5Y is null ? "N/A" : result.Metrics.EpsCagr5Y.Value.ToString("F1", CultureInfo.InvariantCulture) + "%")}");
         Console.WriteLine($"ASII.JK EPS CAGR 3Y = {result.Metrics.EpsCagr3Y:F1}%");
         Console.WriteLine($"ASII.JK earnings consistency = {result.Metrics.EarningsConsistencyScore:F1}");
         Console.WriteLine($"ASII.JK stable/growing dividend years = {result.Metrics.StableOrGrowingYears}");
