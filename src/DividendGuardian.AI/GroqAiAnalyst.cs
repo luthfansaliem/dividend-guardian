@@ -27,9 +27,10 @@ public sealed class GroqAiAnalyst(HttpClient httpClient, AiOptions options) : IA
             model,
             messages = new object[]
             {
-                new { role = "system", content = DividendGuardianAiPrompt.System },
+                new { role = "system", content = DividendGuardianAiPrompt.System + "\nReturn every field required by the supplied JSON schema. Use empty arrays rather than omitting array fields when no items apply. Do not emit markdown or prose outside the schema." },
                 new { role = "user", content = JsonSerializer.Serialize(analystInput, JsonOptions) }
             },
+            reasoning_effort = "low",
             response_format = new
             {
                 type = "json_schema",
