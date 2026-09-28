@@ -12,9 +12,9 @@ public static class NormalizedValuationEngine
 {
     /// <summary>
     /// Calculates a simple, explicit normalized baseline from the latest completed
-    /// fiscal years. Median values are used to reduce sensitivity to one unusually
-    /// high or low year. This is not a forecast and does not claim statistical
-    /// normalization beyond the configured historical window.
+    /// fiscal years shared by fundamentals and dividends. Median values are used
+    /// to reduce sensitivity to one unusually high or low year. This is not a
+    /// forecast and does not claim statistical normalization beyond this window.
     /// </summary>
     public static NormalizedValuationInputs Calculate(
         IReadOnlyList<AnnualFundamentalPoint> fundamentals,
@@ -24,56 +24,44 @@ public static class NormalizedValuationEngine
         if (years <= 0)
             throw new ArgumentOutOfRangeException(nameof(years));
 
-        var orderedFundamentals = fundamentals
+        var fundamentalByYear = fundamentals
             .Where(x => x.Year > 0)
-            .OrderBy(x => x.Year)
-            .TakeLast(years)
-            .ToArray();
+            .GroupBy(x => x.Year)
+            .ToDictionary(g => g.Key, g => g.Last());
 
-        var orderedDividends = dividends
+        var dividendByYear = dividends
             .Where(x => x.Year > 0 && x.Dps > 0)
-            .OrderBy(x => x.Year)
+            .GroupBy(x => x.Year)
+            .ToDictionary(g => g.Key, g => g.Last());
+
+        var commonYears = fundamentalByYear.Keys
+            .Intersect(dividendByYear.Keys)
+            .OrderBy(x => x)
             .TakeLast(years)
             .ToArray();
 
-        if (orderedFundamentals.Length == 0 && orderedDividends.Length == 0)
+        if (commonYears.Length == 0)
         {
             return new NormalizedValuationInputs(
                 0, 0, 0, null, null, null);
         }
 
-        var startYear = new[] {
-            orderedFundamentals.Select(x => x.Year).DefaultIfEmpty(0).Min(),
-            orderedDividends.Select(x => x.Year).DefaultIfEmpty(0).Min()
-        }.Where(x => x > 0).Min();
+        var selectedFundamentals = commonYears
+            .Select(year => fundamentalByYear[year])
+            .ToArray();
 
-        var endYear = new[] {
-            orderedFundamentals.Select(x => x.Year).DefaultIfEmpty(0).Max(),
-            orderedDividends.Select(x => x.Year).DefaultIfEmpty(0).Max()
-        }.Max();
-
-        var commonStartYear = new[] {
-            orderedFundamentals.Select(x => x.Year).DefaultIfEmpty(0).Min(),
-            orderedDividends.Select(x => x.Year).DefaultIfEmpty(0).Min()
-        }.Where(x => x > 0).Max();
-
-        var commonEndYear = new[] {
-            orderedFundamentals.Select(x => x.Year).DefaultIfEmpty(0).Max(),
-            orderedDividends.Select(x => x.Year).DefaultIfEmpty(0).Max()
-        }.Where(x => x > 0).Min();
-
-        var commonYearCount = commonStartYear > 0 && commonEndYear >= commonStartYear
-            ? commonEndYear - commonStartYear + 1
-            : Math.Max(orderedFundamentals.Length, orderedDividends.Length);
+        var selectedDividends = commonYears
+            .Select(year => dividendByYear[year])
+            .ToArray();
 
         return new NormalizedValuationInputs(
-            commonYearCount,
-            startYear,
-            endYear,
-            Median(orderedDividends.Select(x => x.Dps)),
-            Median(orderedFundamentals.Select(x => x.Eps)),
-            Median(orderedFundamentals
-                .Where(x => x.SharesOutstanding > 0)
+            commonYears.Length,
+            commonYears[0],
+            commonYears[^1],
+            Median(selectedDividends.Select(x => x.Dps)),
+            Median(selectedFundamentals.Select(x => x.Eps)),
+            Median(selectedFundamentals
+                .Where(x => x.SharesOutstanding > 0 && x.FreeCashFlow > 0)
                 .Select(x => x.FreeCashFlow / x.SharesOutstanding)));
     }
 
