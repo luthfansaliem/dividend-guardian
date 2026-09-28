@@ -119,10 +119,16 @@ public sealed class YahooFinanceFundamentalDataProvider(
                 if (number is null)
                     continue;
 
+                var currency = value.TryGetProperty("currencyCode", out var currencyElement) &&
+                               currencyElement.ValueKind == JsonValueKind.String
+                    ? currencyElement.GetString()
+                    : null;
+
                 if (!byDate.TryGetValue(date, out var current))
                     current = new FundamentalValues();
 
                 current.Set(seriesName, number.Value);
+                current.SetCurrency(currency);
                 byDate[date] = current;
             }
         }
@@ -145,7 +151,8 @@ public sealed class YahooFinanceFundamentalDataProvider(
                 x.Value.Equity,
                 x.Value.Debt,
                 x.Value.Cash,
-                x.Value.Shares > 0 ? (long)x.Value.Shares : 0))
+                x.Value.Shares > 0 ? (long)x.Value.Shares : 0,
+                x.Value.Currency))
             .ToArray();
     }
 
@@ -287,6 +294,13 @@ public sealed class YahooFinanceFundamentalDataProvider(
         public decimal Debt { get; private set; }
         public decimal Cash { get; private set; }
         public decimal Shares { get; private set; }
+        public string? Currency { get; private set; }
+
+        public void SetCurrency(string? currency)
+        {
+            if (!string.IsNullOrWhiteSpace(currency))
+                Currency ??= currency.ToUpperInvariant();
+        }
 
         public void Set(string seriesName, decimal value)
         {
