@@ -41,19 +41,31 @@ public sealed class QuantDataRepository(Database database, IFxRateProvider fxRat
             !fundamentalCurrency.Equals(marketCurrency, StringComparison.OrdinalIgnoreCase) &&
             fundamentals.Count > 0)
         {
-            var rates = await fxRates.GetYearEndRatesAsync(
-                fundamentalCurrency,
-                marketCurrency,
-                new DateOnly(fundamentals.Min(x => x.Year), 1, 1),
-                new DateOnly(fundamentals.Max(x => x.Year), 12, 31),
-                ct);
-
-            if (fundamentals.All(x => rates.ContainsKey(x.Year)))
+            try
             {
-                fundamentals = fundamentals
-                    .Select(x => ConvertCurrency(x, rates[x.Year]))
-                    .ToArray();
-                fundamentalCurrency = marketCurrency;
+                var rates = await fxRates.GetYearEndRatesAsync(
+                    fundamentalCurrency,
+                    marketCurrency,
+                    new DateOnly(fundamentals.Min(x => x.Year), 1, 1),
+                    new DateOnly(fundamentals.Max(x => x.Year), 12, 31),
+                    ct);
+
+                if (fundamentals.All(x => rates.ContainsKey(x.Year)))
+                {
+                    fundamentals = fundamentals
+                        .Select(x => ConvertCurrency(x, rates[x.Year]))
+                        .ToArray();
+                    fundamentalCurrency = marketCurrency;
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch
+            {
+                // Fail closed: preserve the original currency so Quant marks
+                // the result CURRENCY_MISMATCH instead of using mixed units.
             }
         }
 
