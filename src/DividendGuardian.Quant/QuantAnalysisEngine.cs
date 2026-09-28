@@ -129,23 +129,25 @@ public sealed class QuantAnalysisEngine
             .TakeLast(5)
             .Select(x => x.Value));
 
-        decimal? currentFcfYield = latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
+        decimal? currentFcfYield = currencyConsistent && latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
             ? (decimal?)(latest.FreeCashFlow / (input.CurrentPrice * latest.SharesOutstanding) * 100m)
             : null;
 
-        var historicalFcfYield = Median(
-            fundamentals.Join(prices, f => f.Year, p => p.Year,
-                (f, p) => new
-                {
-                    f.Year,
-                    Value = f.FreeCashFlow > 0 && f.SharesOutstanding > 0
-                        ? f.FreeCashFlow / (p.Close * f.SharesOutstanding) * 100m
-                        : 0m
-                })
-            .Where(x => x.Value > 0)
-            .OrderBy(x => x.Year)
-            .TakeLast(5)
-            .Select(x => x.Value));
+        var historicalFcfYield = currencyConsistent
+            ? Median(
+                fundamentals.Join(prices, f => f.Year, p => p.Year,
+                    (f, p) => new
+                    {
+                        f.Year,
+                        Value = f.FreeCashFlow > 0 && f.SharesOutstanding > 0
+                            ? f.FreeCashFlow / (p.Close * f.SharesOutstanding) * 100m
+                            : 0m
+                    })
+                .Where(x => x.Value > 0)
+                .OrderBy(x => x.Year)
+                .TakeLast(5)
+                .Select(x => x.Value))
+            : null;
 
         var peScore = ScorePe(currentPe, historicalPe);
         var yieldScore = ScoreRelative(currentYield, historicalYield, 8m);
@@ -167,7 +169,7 @@ public sealed class QuantAnalysisEngine
         var fairValue = _fairValue.Calculate(new FairValueInput(
             LatestFiscalYearDps: latestDps > 0 ? latestDps : null,
             LatestFiscalYearEps: accountingConsistent && latest.Eps > 0 ? latest.Eps : null,
-            LatestFiscalYearFcfPerShare: latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
+            LatestFiscalYearFcfPerShare: currencyConsistent && latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
                 ? latest.FreeCashFlow / latest.SharesOutstanding
                 : null,
             HistoricalMedianDividendYieldPercent: historicalYield,
