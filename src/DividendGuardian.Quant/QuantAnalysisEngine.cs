@@ -11,7 +11,9 @@ public sealed record QuantAnalysisInput(
     IReadOnlyList<AnnualFundamentalPoint> Fundamentals,
     IReadOnlyList<AnnualDividendPoint> Dividends,
     IReadOnlyList<AnnualPricePoint> HistoricalYearEndPrices,
-    bool IsCyclical);
+    bool IsCyclical,
+    string? FundamentalCurrency = null,
+    string? MarketCurrency = "IDR");
 
 public sealed record QuantAnalysisResult(
     QuantScore Score,
@@ -95,7 +97,10 @@ public sealed class QuantAnalysisEngine
 
         var metrics = _metrics.Calculate(fundamentals, dividends);
         var latest = fundamentals[^1];
-        var accountingConsistent = IsEpsSharesConsistent(latest);
+        var currencyConsistent = string.IsNullOrWhiteSpace(input.FundamentalCurrency) ||
+                                 string.IsNullOrWhiteSpace(input.MarketCurrency) ||
+                                 input.FundamentalCurrency.Equals(input.MarketCurrency, StringComparison.OrdinalIgnoreCase);
+        var accountingConsistent = currencyConsistent && IsEpsSharesConsistent(latest);
         if (!accountingConsistent)
         {
             metrics = metrics with { PayoutRatio = null, FcfPayoutRatio = null };
@@ -172,9 +177,11 @@ public sealed class QuantAnalysisEngine
         var marginOfSafety = FairValueEngine.MarginOfSafety(
             input.CurrentPrice, fairValue.Range.Conservative);
 
-        var dataQuality = accountingConsistent
-            ? DetermineDataQuality(fundamentals, dividends, prices, metrics, historicalYield, historicalPe, historicalFcfYield, fairValue)
-            : "INCONSISTENT";
+        var dataQuality = !currencyConsistent
+            ? "CURRENCY_MISMATCH"
+            : accountingConsistent
+                ? DetermineDataQuality(fundamentals, dividends, prices, metrics, historicalYield, historicalPe, historicalFcfYield, fairValue)
+                : "INCONSISTENT";
 
         var buyZone = _buyZone.Evaluate(
             input.CurrentPrice,
@@ -186,7 +193,9 @@ public sealed class QuantAnalysisEngine
             dataQuality);
         var reasons = BuildReasons(currentYield, historicalYield, currentPe, historicalPe,
             currentFcfYield, metrics, riskScore, fairValue, marginOfSafety);
-        if (!accountingConsistent)
+        if (!currencyConsistent)
+            reasons = reasons.Append($"Currency mismatch: fundamentals are {input.FundamentalCurrency} while market/dividend values are {input.MarketCurrency}; cross-currency PE, payout, and fair-value metrics were suppressed.").ToArray();
+        else if (!accountingConsistent)
             reasons = reasons.Append("Accounting consistency check failed: EPS × shares is materially inconsistent with net income; PE and payout metrics that depend on these units were suppressed.").ToArray();
         reasons = reasons.Append($"Data quality {dataQuality}.").ToArray();
 
