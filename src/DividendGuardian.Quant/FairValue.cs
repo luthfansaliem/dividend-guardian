@@ -69,9 +69,9 @@ public sealed class FairValueEngine
 
         var reasons = new List<string>
         {
-            $"Fair value uses {methods.Length} independent valuation method(s).",
+            $"Fair value uses {methods.Length} valuation method(s); the methods are treated as separate signals, not statistically independent estimates.",
             $"Base fair value {baseValue:F2}; range {conservative:F2}-{optimistic:F2}.",
-            $"Valuation method spread {confidence.SpreadPercent:F1}% ({confidence.Level})."
+            $"Valuation method spread {confidence.SpreadPercent:F1}% ({confidence.Level}); base value is the median of available methods."
         };
 
         if (dividend is not null)
