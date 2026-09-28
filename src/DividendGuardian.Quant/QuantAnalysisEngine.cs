@@ -95,6 +95,11 @@ public sealed class QuantAnalysisEngine
 
         var metrics = _metrics.Calculate(fundamentals, dividends);
         var latest = fundamentals[^1];
+        var accountingConsistent = IsEpsSharesConsistent(latest);
+        if (!accountingConsistent)
+        {
+            metrics = metrics with { PayoutRatio = null, FcfPayoutRatio = null };
+        }
 
         var latestDps = dividends.LastOrDefault()?.Dps;
         var currentYield = latestDps is > 0
@@ -109,10 +114,10 @@ public sealed class QuantAnalysisEngine
             .TakeLast(5)
             .Select(x => x.Yield));
 
-        decimal? currentPe = latest.Eps > 0 ? (decimal?)(input.CurrentPrice / latest.Eps) : null;
+        decimal? currentPe = accountingConsistent && latest.Eps > 0 ? (decimal?)(input.CurrentPrice / latest.Eps) : null;
 
         var historicalPe = Median(
-            fundamentals.Join(prices, f => f.Year, p => p.Year,
+            fundamentals.Where(IsEpsSharesConsistent).Join(prices, f => f.Year, p => p.Year,
                 (f, p) => new { f.Year, Value = f.Eps > 0 ? p.Close / f.Eps : 0m })
             .Where(x => x.Value > 0)
             .OrderBy(x => x.Year)
@@ -156,7 +161,7 @@ public sealed class QuantAnalysisEngine
 
         var fairValue = _fairValue.Calculate(new FairValueInput(
             LatestFiscalYearDps: latestDps > 0 ? latestDps : null,
-            LatestFiscalYearEps: latest.Eps > 0 ? latest.Eps : null,
+            LatestFiscalYearEps: accountingConsistent && latest.Eps > 0 ? latest.Eps : null,
             LatestFiscalYearFcfPerShare: latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
                 ? latest.FreeCashFlow / latest.SharesOutstanding
                 : null,
@@ -167,7 +172,9 @@ public sealed class QuantAnalysisEngine
         var marginOfSafety = FairValueEngine.MarginOfSafety(
             input.CurrentPrice, fairValue.Range.Conservative);
 
-        var dataQuality = DetermineDataQuality(fundamentals, dividends, prices, metrics, historicalYield, historicalPe, historicalFcfYield, fairValue);
+        var dataQuality = accountingConsistent
+            ? DetermineDataQuality(fundamentals, dividends, prices, metrics, historicalYield, historicalPe, historicalFcfYield, fairValue)
+            : "INCONSISTENT";
 
         var buyZone = _buyZone.Evaluate(
             input.CurrentPrice,
@@ -179,12 +186,24 @@ public sealed class QuantAnalysisEngine
             dataQuality);
         var reasons = BuildReasons(currentYield, historicalYield, currentPe, historicalPe,
             currentFcfYield, metrics, riskScore, fairValue, marginOfSafety);
+        if (!accountingConsistent)
+            reasons = reasons.Append("Accounting consistency check failed: EPS × shares is materially inconsistent with net income; PE and payout metrics that depend on these units were suppressed.").ToArray();
         reasons = reasons.Append($"Data quality {dataQuality}.").ToArray();
 
         return new QuantAnalysisResult(
             score, metrics, input.CurrentPrice, currentYield, historicalYield,
             currentPe, historicalPe, currentFcfYield, historicalFcfYield, riskScore,
             fairValue.Range, fairValue.Confidence, marginOfSafety, buyZone, reasons, dataQuality);
+    }
+
+    private static bool IsEpsSharesConsistent(AnnualFundamentalPoint point)
+    {
+        if (point.Eps <= 0 || point.SharesOutstanding <= 0 || point.NetIncome <= 0)
+            return false;
+
+        var impliedNetIncome = point.Eps * point.SharesOutstanding;
+        var ratio = impliedNetIncome / point.NetIncome;
+        return ratio >= 0.5m && ratio <= 2m;
     }
 
     private static string DetermineDataQuality(
