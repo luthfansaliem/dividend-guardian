@@ -56,9 +56,16 @@ public sealed class FairValueEngine
         }
 
         var baseValue = Median(methods)!.Value;
-        var conservative = baseValue * conservativeMultiplier;
-        var optimistic = baseValue * optimisticMultiplier;
         var confidence = BuildConfidence(methods, baseValue);
+
+        // The range must not claim a "conservative" value above the lowest
+        // valid valuation method, or an "optimistic" value below the highest.
+        var conservative = Math.Min(
+            baseValue * conservativeMultiplier,
+            confidence.MinFairValue!.Value);
+        var optimistic = Math.Max(
+            baseValue * optimisticMultiplier,
+            confidence.MaxFairValue!.Value);
 
         var reasons = new List<string>
         {
