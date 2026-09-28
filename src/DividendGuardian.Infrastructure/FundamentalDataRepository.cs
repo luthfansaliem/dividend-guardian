@@ -12,12 +12,12 @@ public sealed class FundamentalDataRepository(Database database)
         await using var tx = await connection.BeginTransactionAsync(ct);
 
         const string sql = """
-            insert into fundamentals (ticker, period_end, revenue, net_income, eps, free_cash_flow, equity, total_debt, cash, shares_outstanding)
-            values (@ticker, @period_end, @revenue, @net_income, @eps, @fcf, @equity, @debt, @cash, @shares)
+            insert into fundamentals (ticker, period_end, revenue, net_income, eps, free_cash_flow, equity, total_debt, cash, shares_outstanding, currency)
+            values (@ticker, @period_end, @revenue, @net_income, @eps, @fcf, @equity, @debt, @cash, @shares, @currency)
             on conflict (ticker, period_end) do update set
                 revenue=excluded.revenue, net_income=excluded.net_income, eps=excluded.eps,
                 free_cash_flow=excluded.free_cash_flow, equity=excluded.equity, total_debt=excluded.total_debt,
-                cash=excluded.cash, shares_outstanding=excluded.shares_outstanding;
+                cash=excluded.cash, shares_outstanding=excluded.shares_outstanding, currency=excluded.currency;
             """;
         foreach (var record in records)
         {
@@ -32,6 +32,7 @@ public sealed class FundamentalDataRepository(Database database)
             command.Parameters.AddWithValue("debt", record.Debt);
             command.Parameters.AddWithValue("cash", record.Cash);
             command.Parameters.AddWithValue("shares", record.SharesOutstanding);
+            command.Parameters.AddWithValue("currency", (object?)record.Currency ?? DBNull.Value);
             await command.ExecuteNonQueryAsync(ct);
         }
         await tx.CommitAsync(ct);

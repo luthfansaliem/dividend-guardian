@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+
 namespace DividendGuardian.Notification;
 
 public sealed class TelegramNotifier

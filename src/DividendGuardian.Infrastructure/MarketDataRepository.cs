@@ -32,6 +32,24 @@ public sealed class MarketDataRepository(Database database)
         await transaction.CommitAsync(ct);
     }
 
+    public async Task<DateOnly?> GetEarliestPriceDateAsync(string ticker, CancellationToken ct = default)
+    {
+        const string sql = "select min(trade_date) from daily_prices where ticker=@ticker;";
+        await using var connection = new NpgsqlConnection(database.ConnectionString);
+        await connection.OpenAsync(ct);
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("ticker", ticker);
+        var value = await command.ExecuteScalarAsync(ct);
+        return value switch
+        {
+            null or DBNull => null,
+            DateOnly date => date,
+            DateTime dateTime => DateOnly.FromDateTime(dateTime),
+            _ => throw new InvalidOperationException(
+                $"Unexpected database date type: {value.GetType().FullName}.")
+        };
+    }
+
     public async Task RecordIngestionAsync(string provider, string ticker, DateOnly from, DateOnly to, int rows, string status, string? error, CancellationToken ct = default)
     {
         const string sql = """

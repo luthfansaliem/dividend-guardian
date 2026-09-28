@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DividendGuardian.Infrastructure;
@@ -17,10 +18,16 @@ public sealed class MarketDataCollector(
         {
             try
             {
-                var raw = await provider.GetEodPricesAsync(stock.Ticker, from, to, ct);
+                var requiredHistoryFrom = to.AddYears(-Math.Max(1, options.Value.HistoryYears));
+                var earliestStored = await repository.GetEarliestPriceDateAsync(stock.Ticker, ct);
+                var effectiveFrom = earliestStored is null || earliestStored.Value > requiredHistoryFrom
+                    ? requiredHistoryFrom
+                    : from;
+
+                var raw = await provider.GetEodPricesAsync(stock.Ticker, effectiveFrom, to, ct);
                 var valid = MarketDataValidator.ValidateAndNormalize(stock.Ticker, raw);
                 await repository.UpsertEodPricesAsync(valid, ct);
-                await repository.RecordIngestionAsync(options.Value.Provider, stock.Ticker, from, to, valid.Count, "SUCCESS", null, ct);
+                await repository.RecordIngestionAsync(options.Value.Provider, stock.Ticker, effectiveFrom, to, valid.Count, "SUCCESS", null, ct);
                 total += valid.Count;
                 logger.LogInformation("Market data {Ticker}: {Rows} rows", stock.Ticker, valid.Count);
             }

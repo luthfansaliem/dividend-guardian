@@ -12,4 +12,7 @@ public sealed class FundamentalDataOptions
     public bool IncludeCashFlow { get; set; } = true;
     public bool IncludeBalanceSheet { get; set; } = true;
     public bool IncludeDividends { get; set; } = true;
+    public string CsvDirectory { get; set; } = "database/seed/fundamentals";
+    public string FundamentalsFileName { get; set; } = "fundamentals.csv";
+    public string DividendsFileName { get; set; } = "dividends.csv";
 }
