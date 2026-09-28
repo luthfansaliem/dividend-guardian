@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DividendGuardian.AI;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace DividendGuardian.Infrastructure;
 
@@ -91,7 +92,10 @@ public sealed class AiAnalysisRepository(Database database)
         command.Parameters.AddWithValue("invalidation_triggers", JsonSerializer.Serialize(response.InvalidationTriggers));
         command.Parameters.AddWithValue("data_gaps", JsonSerializer.Serialize(response.DataGaps));
         command.Parameters.AddWithValue("data_quality", response.DataQuality);
-        command.Parameters.AddWithValue("raw_response", JsonSerializer.SerializeToDocument(response).RootElement.GetRawText());
+        command.Parameters.AddWithValue(
+            "raw_response",
+            NpgsqlDbType.Jsonb,
+            JsonSerializer.Serialize(response));
         command.Parameters.AddWithValue("model_version", response.PromptVersion);
         command.Parameters.AddWithValue("idempotency_key", idempotencyKey);
 
