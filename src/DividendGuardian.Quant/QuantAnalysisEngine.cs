@@ -183,6 +183,9 @@ public sealed class QuantAnalysisEngine
                 ? DetermineDataQuality(fundamentals, dividends, prices, metrics, historicalYield, historicalPe, historicalFcfYield, fairValue)
                 : "INCONSISTENT";
 
+        if (dataQuality is "CURRENCY_MISMATCH" or "INCONSISTENT")
+            score = score with { Status = AnalysisStatus.Review };
+
         var buyZone = _buyZone.Evaluate(
             input.CurrentPrice,
             fairValue.Range.Conservative,
