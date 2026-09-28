@@ -39,7 +39,7 @@ public sealed class AiAnalyst : IAiAnalyst
                 new { role = "system", content = new[] { new { type = "input_text", text = DividendGuardianAiPrompt.System } } },
                 new { role = "user", content = new[] { new { type = "input_text", text = JsonSerializer.Serialize(analystInput, JsonOptions) } } }
             },
-            text = new { format = new { type = "json_schema", name = "dividend_guardian_analysis", strict = true, schema = ResponseSchema } },
+            text = new { format = new { type = "json_schema", name = "dividend_guardian_analysis", strict = true, schema = ResponseSchema.RootElement } },
             store = false
         };
 
@@ -183,23 +183,43 @@ public sealed class AiAnalyst : IAiAnalyst
         PropertyNameCaseInsensitive = true
     };
 
-    private static readonly object ResponseSchema = new
+    private static readonly JsonDocument ResponseSchema = JsonDocument.Parse("""
     {
-        type = "object",
-        additionalProperties = false,
-        properties = new
-        {
-            ticker = new { type = "string" },
-            verdict = new { type = "string" },
-            why_accumulate = new { type = "string" },
-            why_not_accumulate = new { type = "string" },
-            key_risks = new { type = "array", items = new { type = "string" } },
-            data_gaps = new { type = "array", items = new { type = "string" } },
-            invalidation_triggers = new { type = "array", items = new { type = "string" } },
-            data_quality = new { type = "string" },
-            model = new { type = "string" },
-            prompt_version = new { type = "string" }
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ticker": { "type": "string" },
+        "verdict": { "type": "string" },
+        "why_accumulate": { "type": "string" },
+        "why_not_accumulate": { "type": "string" },
+        "key_risks": {
+          "type": "array",
+          "items": { "type": "string" }
         },
-        required = new[] { "ticker", "verdict", "why_accumulate", "why_not_accumulate", "key_risks", "data_gaps", "invalidation_triggers", "data_quality", "model", "prompt_version" }
-    };
+        "data_gaps": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "invalidation_triggers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "data_quality": { "type": "string" },
+        "model": { "type": "string" },
+        "prompt_version": { "type": "string" }
+      },
+      "required": [
+        "ticker",
+        "verdict",
+        "why_accumulate",
+        "why_not_accumulate",
+        "key_risks",
+        "data_gaps",
+        "invalidation_triggers",
+        "data_quality",
+        "model",
+        "prompt_version"
+      ]
+    }
+    """);
 }
