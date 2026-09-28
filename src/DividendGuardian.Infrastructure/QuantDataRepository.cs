@@ -3,7 +3,7 @@ using Npgsql;
 
 namespace DividendGuardian.Infrastructure;
 
-public sealed class QuantDataRepository(Database database)
+public sealed class QuantDataRepository(Database database, IFxRateProvider fxRates)
 {
     public async Task<QuantAnalysisInput?> LoadAsync(
         string ticker,
@@ -35,6 +35,28 @@ public sealed class QuantDataRepository(Database database)
 
         var fundamentals = await LoadFundamentalsAsync(connection, ticker, ct);
         var fundamentalCurrency = await LoadFundamentalCurrencyAsync(connection, ticker, ct);
+        const string marketCurrency = "IDR";
+
+        if (!string.IsNullOrWhiteSpace(fundamentalCurrency) &&
+            !fundamentalCurrency.Equals(marketCurrency, StringComparison.OrdinalIgnoreCase) &&
+            fundamentals.Count > 0)
+        {
+            var rates = await fxRates.GetYearEndRatesAsync(
+                fundamentalCurrency,
+                marketCurrency,
+                new DateOnly(fundamentals.Min(x => x.Year), 1, 1),
+                new DateOnly(fundamentals.Max(x => x.Year), 12, 31),
+                ct);
+
+            if (fundamentals.All(x => rates.ContainsKey(x.Year)))
+            {
+                fundamentals = fundamentals
+                    .Select(x => ConvertCurrency(x, rates[x.Year]))
+                    .ToArray();
+                fundamentalCurrency = marketCurrency;
+            }
+        }
+
         var dividends = await LoadDividendsAsync(connection, ticker, ct);
         var yearEndPrices = await LoadYearEndPricesAsync(connection, ticker, analysisDate, ct);
 
@@ -51,7 +73,7 @@ public sealed class QuantDataRepository(Database database)
             yearEndPrices,
             isCyclical,
             fundamentalCurrency,
-            "IDR");
+            marketCurrency);
     }
 
     private static async Task<decimal?> LoadCurrentPriceAsync(
@@ -157,6 +179,15 @@ public sealed class QuantDataRepository(Database database)
             result.Add(new AnnualPricePoint(reader.GetInt32(0), reader.GetDecimal(1)));
         return result;
     }
+
+    private static AnnualFundamentalPoint ConvertCurrency(AnnualFundamentalPoint point, decimal rate) =>
+        point with
+        {
+            Eps = point.Eps * rate,
+            FreeCashFlow = point.FreeCashFlow * rate,
+            NetIncome = point.NetIncome * rate,
+            Debt = point.Debt * rate
+        };
 
     private static bool IsCyclicalSector(string? sector) =>
         sector is not null &&
