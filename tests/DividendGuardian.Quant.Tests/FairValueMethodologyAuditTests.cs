@@ -8,9 +8,9 @@ public sealed class FairValueMethodologyAuditTests
     public void ThreeMethods_CloseTogether_ClassifyAsStrong()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: 5m,
-            NormalizedEps: 20m,
-            NormalizedFcfPerShare: 10m,
+            LatestFiscalYearDps: 5m,
+            LatestFiscalYearEps: 20m,
+            LatestFiscalYearFcfPerShare: 10m,
             HistoricalMedianDividendYieldPercent: 5m,
             HistoricalMedianPe: 5m,
             HistoricalMedianFcfYieldPercent: 10m));
@@ -25,9 +25,9 @@ public sealed class FairValueMethodologyAuditTests
     public void ThreeMethods_WideSpread_IsExplicitlyMarkedHighDisagreement()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: 390m,
-            NormalizedEps: 810m,
-            NormalizedFcfPerShare: 673.75m,
+            LatestFiscalYearDps: 390m,
+            LatestFiscalYearEps: 810m,
+            LatestFiscalYearFcfPerShare: 673.75m,
             HistoricalMedianDividendYieldPercent: 8.29m,
             HistoricalMedianPe: 7.37m,
             HistoricalMedianFcfYieldPercent: 10.55m));
@@ -47,9 +47,9 @@ public sealed class FairValueMethodologyAuditTests
     public void ThreeMethods_UseMedianAsBase_EvenWhenMethodsDisagree()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: 100m,
-            NormalizedEps: 30m,
-            NormalizedFcfPerShare: 50m,
+            LatestFiscalYearDps: 100m,
+            LatestFiscalYearEps: 30m,
+            LatestFiscalYearFcfPerShare: 50m,
             HistoricalMedianDividendYieldPercent: 5m,
             HistoricalMedianPe: 10m,
             HistoricalMedianFcfYieldPercent: 5m));
@@ -66,9 +66,9 @@ public sealed class FairValueMethodologyAuditTests
     public void TwoMethods_UseArithmeticMedianOfTheTwoValues()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: null,
-            NormalizedEps: 20m,
-            NormalizedFcfPerShare: 30m,
+            LatestFiscalYearDps: null,
+            LatestFiscalYearEps: 20m,
+            LatestFiscalYearFcfPerShare: 30m,
             HistoricalMedianDividendYieldPercent: null,
             HistoricalMedianPe: 5m,
             HistoricalMedianFcfYieldPercent: 10m));
@@ -94,9 +94,9 @@ public sealed class FairValueMethodologyAuditTests
         string expectedConfidence)
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: null,
-            NormalizedEps: firstFairValue,
-            NormalizedFcfPerShare: secondFairValue / 10m,
+            LatestFiscalYearDps: null,
+            LatestFiscalYearEps: firstFairValue,
+            LatestFiscalYearFcfPerShare: secondFairValue / 10m,
             HistoricalMedianDividendYieldPercent: null,
             HistoricalMedianPe: 1m,
             HistoricalMedianFcfYieldPercent: 10m));
@@ -119,9 +119,9 @@ public sealed class FairValueMethodologyAuditTests
     public void OneMethod_UsesThatMethodAsBase()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: null,
-            NormalizedEps: 20m,
-            NormalizedFcfPerShare: null,
+            LatestFiscalYearDps: null,
+            LatestFiscalYearEps: 20m,
+            LatestFiscalYearFcfPerShare: null,
             HistoricalMedianDividendYieldPercent: null,
             HistoricalMedianPe: 5m,
             HistoricalMedianFcfYieldPercent: null));
@@ -136,9 +136,9 @@ public sealed class FairValueMethodologyAuditTests
     public void TwoMethods_CloseTogether_AreModerateNotStrong()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: null,
-            NormalizedEps: 20m,
-            NormalizedFcfPerShare: 10.5m,
+            LatestFiscalYearDps: null,
+            LatestFiscalYearEps: 20m,
+            LatestFiscalYearFcfPerShare: 10.5m,
             HistoricalMedianDividendYieldPercent: null,
             HistoricalMedianPe: 5m,
             HistoricalMedianFcfYieldPercent: 10m));
