@@ -2,10 +2,14 @@ using DividendGuardian.Domain;
 
 namespace DividendGuardian.Quant;
 
+/// <summary>
+/// Valuation inputs based on the latest available completed fiscal year.
+/// These are trailing/latest-period values, not forward estimates or normalized earnings.
+/// </summary>
 public sealed record FairValueInput(
-    decimal? ForwardDps,
-    decimal? NormalizedEps,
-    decimal? NormalizedFcfPerShare,
+    decimal? LatestFiscalYearDps,
+    decimal? LatestFiscalYearEps,
+    decimal? LatestFiscalYearFcfPerShare,
     decimal? HistoricalMedianDividendYieldPercent,
     decimal? HistoricalMedianPe,
     decimal? HistoricalMedianFcfYieldPercent);
@@ -36,10 +40,10 @@ public sealed class FairValueEngine
         ValidateMultiplier(optimisticMultiplier, nameof(optimisticMultiplier));
 
         var dividend = DividendYieldFairValue(
-            input.ForwardDps, input.HistoricalMedianDividendYieldPercent);
-        var pe = PeFairValue(input.NormalizedEps, input.HistoricalMedianPe);
+            input.LatestFiscalYearDps, input.HistoricalMedianDividendYieldPercent);
+        var pe = PeFairValue(input.LatestFiscalYearEps, input.HistoricalMedianPe);
         var fcf = FcfFairValue(
-            input.NormalizedFcfPerShare, input.HistoricalMedianFcfYieldPercent);
+            input.LatestFiscalYearFcfPerShare, input.HistoricalMedianFcfYieldPercent);
 
         var methods = new[] { dividend, pe, fcf }
             .Where(x => x is > 0)
