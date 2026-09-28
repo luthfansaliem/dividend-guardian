@@ -155,9 +155,9 @@ public sealed class QuantAnalysisEngine
             peScore, yieldScore, fcfScore, riskScore);
 
         var fairValue = _fairValue.Calculate(new FairValueInput(
-            ForwardDps: latestDps > 0 ? latestDps : null,
-            NormalizedEps: latest.Eps > 0 ? latest.Eps : null,
-            NormalizedFcfPerShare: latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
+            LatestFiscalYearDps: latestDps > 0 ? latestDps : null,
+            LatestFiscalYearEps: latest.Eps > 0 ? latest.Eps : null,
+            LatestFiscalYearFcfPerShare: latest.FreeCashFlow > 0 && latest.SharesOutstanding > 0
                 ? latest.FreeCashFlow / latest.SharesOutstanding
                 : null,
             HistoricalMedianDividendYieldPercent: historicalYield,
