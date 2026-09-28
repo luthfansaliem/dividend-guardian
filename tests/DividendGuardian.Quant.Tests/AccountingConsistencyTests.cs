@@ -78,6 +78,8 @@ public sealed class AccountingConsistencyTests
         Assert.Null(result.CurrentPe);
         Assert.Null(result.Metrics.PayoutRatio);
         Assert.Null(result.Metrics.FcfPayoutRatio);
-        Assert.Null(result.FairValue.Base);
+        Assert.NotNull(result.FairValue.Base);
+        Assert.Equal("SINGLE_METHOD", result.ValuationConfidence.Level);
+        Assert.Contains(result.Reasons, x => x.Contains("Currency mismatch"));
     }
 }
