@@ -27,7 +27,11 @@ public sealed class YahooFinanceMarketDataProvider(
             to.AddDays(1).ToDateTime(TimeOnly.MinValue),
             TimeSpan.Zero).ToUnixTimeSeconds();
 
-        var symbol = Uri.EscapeDataString(ticker.ToUpperInvariant());
+        var normalizedTicker = ticker.ToUpperInvariant();
+        var yahooSymbol = normalizedTicker.Contains('.')
+            ? normalizedTicker
+            : $"{normalizedTicker}.JK";
+        var symbol = Uri.EscapeDataString(yahooSymbol);
 
         var uri =
             $"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}" +
@@ -108,7 +112,7 @@ public sealed class YahooFinanceMarketDataProvider(
                 : 0;
 
             prices.Add(new EodPrice(
-                ticker.ToUpperInvariant(),
+                normalizedTicker,
                 date,
                 open,
                 high,
