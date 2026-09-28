@@ -122,7 +122,7 @@ public sealed class QuantAnalysisRepository(Database database)
         CancellationToken ct = default)
     {
         const string sql = """
-            select q.total_score, q.analysis_status, v.price
+            select q.total_score, q.status, v.price
             from quant_scores q
             left join valuations v
               on v.ticker = q.ticker
