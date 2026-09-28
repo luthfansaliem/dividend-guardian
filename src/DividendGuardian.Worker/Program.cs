@@ -42,6 +42,7 @@ builder.Services.Configure<MarketDataOptions>(o =>
     o.BaseUrl = builder.Configuration["MARKET_DATA_BASE_URL"] ?? "https://api.twelvedata.com";
     o.MicCode = builder.Configuration["MARKET_DATA_MIC"] ?? "XIDX";
     o.LookbackDays = int.TryParse(builder.Configuration["MARKET_DATA_LOOKBACK_DAYS"], out var days) ? days : 14;
+    o.HistoryYears = int.TryParse(builder.Configuration["MARKET_DATA_HISTORY_YEARS"], out var historyYears) ? historyYears : 6;
 });
 
 builder.Services.Configure<FundamentalDataOptions>(o =>
