@@ -5,7 +5,7 @@ namespace DividendGuardian.Quant.Tests;
 public sealed class FairValueEngineTests
 {
     [Fact]
-    public void DividendYieldFairValue_UsesForwardDpsAndTargetYield()
+    public void DividendYieldFairValue_UsesLatestFiscalYearDpsAndTargetYield()
     {
         var result = FairValueEngine.DividendYieldFairValue(10m, 5m);
 
@@ -13,7 +13,7 @@ public sealed class FairValueEngineTests
     }
 
     [Fact]
-    public void PeFairValue_UsesNormalizedEpsAndTargetPe()
+    public void PeFairValue_UsesLatestFiscalYearEpsAndTargetPe()
     {
         var result = FairValueEngine.PeFairValue(12m, 10m);
 
@@ -21,7 +21,7 @@ public sealed class FairValueEngineTests
     }
 
     [Fact]
-    public void FcfFairValue_UsesNormalizedFcfPerShareAndTargetYield()
+    public void FcfFairValue_UsesLatestFiscalYearFcfPerShareAndTargetYield()
     {
         var result = FairValueEngine.FcfFairValue(8m, 5m);
 
@@ -34,9 +34,9 @@ public sealed class FairValueEngineTests
         var engine = new FairValueEngine();
 
         var result = engine.Calculate(new FairValueInput(
-            ForwardDps: 10m,
-            NormalizedEps: 12m,
-            NormalizedFcfPerShare: 8m,
+            LatestFiscalYearDps: 10m,
+            LatestFiscalYearEps: 12m,
+            LatestFiscalYearFcfPerShare: 8m,
             HistoricalMedianDividendYieldPercent: 5m,
             HistoricalMedianPe: 10m,
             HistoricalMedianFcfYieldPercent: 5m));
@@ -58,9 +58,9 @@ public sealed class FairValueEngineTests
     public void Calculate_ClassifiesTightMethodsAsStrongAgreement()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: 10m,
-            NormalizedEps: 10m,
-            NormalizedFcfPerShare: 10m,
+            LatestFiscalYearDps: 10m,
+            LatestFiscalYearEps: 10m,
+            LatestFiscalYearFcfPerShare: 10m,
             HistoricalMedianDividendYieldPercent: 10m,
             HistoricalMedianPe: 10m,
             HistoricalMedianFcfYieldPercent: 10m));
@@ -73,9 +73,9 @@ public sealed class FairValueEngineTests
     public void Calculate_ClassifiesModerateMethodSpread()
     {
         var result = new FairValueEngine().Calculate(new FairValueInput(
-            ForwardDps: 10m,
-            NormalizedEps: 11.5m,
-            NormalizedFcfPerShare: 10m,
+            LatestFiscalYearDps: 10m,
+            LatestFiscalYearEps: 11.5m,
+            LatestFiscalYearFcfPerShare: 10m,
             HistoricalMedianDividendYieldPercent: 10m,
             HistoricalMedianPe: 10m,
             HistoricalMedianFcfYieldPercent: 10m));
