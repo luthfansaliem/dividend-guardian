@@ -80,6 +80,41 @@ public sealed class FairValueMethodologyAuditTests
         Assert.Equal(300m, result.FcfFairValue);
     }
 
+    [Theory]
+    [InlineData(100, 105, 102.5, "MODERATE")]
+    [InlineData(100, 120, 110, "MODERATE")]
+    [InlineData(100, 150, 125, "HIGH_DISAGREEMENT")]
+    [InlineData(100, 200, 150, "HIGH_DISAGREEMENT")]
+    [InlineData(100, 300, 200, "HIGH_DISAGREEMENT")]
+    [InlineData(100, 500, 300, "HIGH_DISAGREEMENT")]
+    public void TwoMethods_AuditMatrix_ExposesMidpointAndDisagreement(
+        decimal firstFairValue,
+        decimal secondFairValue,
+        decimal expectedBase,
+        string expectedConfidence)
+    {
+        var result = new FairValueEngine().Calculate(new FairValueInput(
+            ForwardDps: null,
+            NormalizedEps: firstFairValue,
+            NormalizedFcfPerShare: secondFairValue / 10m,
+            HistoricalMedianDividendYieldPercent: null,
+            HistoricalMedianPe: 1m,
+            HistoricalMedianFcfYieldPercent: 10m));
+
+        Assert.Equal(2, result.Confidence.ValidMethodCount);
+        Assert.Equal(firstFairValue, result.PeFairValue);
+        Assert.Equal(secondFairValue, result.FcfFairValue);
+        Assert.Equal(expectedBase, result.Range.Base);
+        Assert.Equal(expectedConfidence, result.Confidence.Level);
+        Assert.NotNull(result.Confidence.SpreadPercent);
+
+        // The current two-method rule is an arithmetic midpoint. This test intentionally
+        // documents that behavior so we can audit whether a different rule is preferable.
+        Assert.Equal(
+            (firstFairValue + secondFairValue) / 2m,
+            result.Range.Base);
+    }
+
     [Fact]
     public void OneMethod_UsesThatMethodAsBase()
     {
