@@ -65,9 +65,9 @@ public sealed class NormalizedValuationTests
     {
         var fundamentals = new[]
         {
-            new AnnualFundamentalPoint(2023, 836m, 12_062m, 33_839m, 40_484_000_000),
-            new AnnualFundamentalPoint(2024, 837m, 28_803m, 33_901m, 40_484_000_000),
-            new AnnualFundamentalPoint(2025, 810m, 27_254m, 32_769m, 40_451_000_000)
+            new AnnualFundamentalPoint(2023, 836m, 12_062_000_000_000m, 33_839_000_000_000m, 40_484_000_000),
+            new AnnualFundamentalPoint(2024, 837m, 28_803_000_000_000m, 33_901_000_000_000m, 40_484_000_000),
+            new AnnualFundamentalPoint(2025, 810m, 27_254_000_000_000m, 32_769_000_000_000m, 40_451_000_000)
         };
 
         var dividends = new[]
