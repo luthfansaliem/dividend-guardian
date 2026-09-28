@@ -26,7 +26,8 @@ public sealed class QuantScoringEngine
         var risk = Clamp(riskScore, 0, 15);
 
         var total = Clamp(yieldScore + sustainability + growth + valuation + risk, 0, 100);
-        var status = total >= 75 && valuation >= 17 && sustainability >= 15
+        var hasCompleteGrowthHistory = epsCagr5Y is not null && epsCagr3Y is not null;
+        var status = total >= 75 && valuation >= 17 && sustainability >= 15 && hasCompleteGrowthHistory
             ? AnalysisStatus.Accumulate
             : total >= 65
                 ? AnalysisStatus.Watch
@@ -60,21 +61,22 @@ public sealed class QuantScoringEngine
 
     public static decimal ScoreGrowth(decimal? eps5Y, decimal? eps3Y, decimal consistencyScore)
     {
-        var earned = Clamp(consistencyScore, 0, 10);
-        var available = 10m;
+        var consistency = Clamp(consistencyScore, 0, 10);
+        var five = eps5Y is null
+            ? (decimal?)null
+            : eps5Y >= 12 ? 10 : eps5Y >= 8 ? 8 : eps5Y >= 5 ? 6 : eps5Y >= 0 ? 3 : 0;
+        var three = eps3Y is null
+            ? (decimal?)null
+            : eps3Y >= 12 ? 6 : eps3Y >= 8 ? 5 : eps3Y >= 5 ? 4 : eps3Y >= 0 ? 2 : 0;
 
-        if (eps5Y is not null)
-        {
-            earned += eps5Y >= 12 ? 10 : eps5Y >= 8 ? 8 : eps5Y >= 5 ? 6 : eps5Y >= 0 ? 3 : 0;
-            available += 10m;
-        }
+        // Preserve the original scoring model when all growth inputs exist.
+        if (five is not null && three is not null)
+            return Clamp(five.Value + three.Value + consistency, 0, 20);
 
-        if (eps3Y is not null)
-        {
-            earned += eps3Y >= 12 ? 6 : eps3Y >= 8 ? 5 : eps3Y >= 5 ? 4 : eps3Y >= 0 ? 2 : 0;
-            available += 6m;
-        }
-
+        // Missing history is unknown, not bad. Normalize only the available
+        // growth evidence to the section's 20-point weight.
+        var earned = consistency + (five ?? 0m) + (three ?? 0m);
+        var available = 10m + (five is null ? 0m : 10m) + (three is null ? 0m : 6m);
         return Normalize(earned, available, 20m);
     }
 
