@@ -18,7 +18,8 @@ public sealed class BuyZoneEngine
         decimal? baseValue,
         decimal? optimistic,
         decimal quantScore,
-        string valuationConfidenceLevel = "UNKNOWN")
+        string valuationConfidenceLevel = "UNKNOWN",
+        string dataQuality = "UNKNOWN")
     {
         if (currentPrice <= 0)
             return Review(conservative, baseValue, optimistic, "Current price is unavailable or invalid.");
@@ -27,9 +28,14 @@ public sealed class BuyZoneEngine
             return Review(conservative, baseValue, optimistic, "Conservative fair value is unavailable; accumulation status cannot be determined.");
 
         var marginOfSafety = 1m - currentPrice / conservative.Value;
-        var status = marginOfSafety >= 0.20m && quantScore >= 80m
+
+        var partialDataWithHighDisagreement =
+            string.Equals(dataQuality, "PARTIAL", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(valuationConfidenceLevel, "HIGH_DISAGREEMENT", StringComparison.OrdinalIgnoreCase);
+        var limitedData = string.Equals(dataQuality, "LIMITED", StringComparison.OrdinalIgnoreCase);
+        var status = !limitedData && !partialDataWithHighDisagreement && marginOfSafety >= 0.20m && quantScore >= 80m
             ? "STRONG_ACCUMULATE"
-            : marginOfSafety >= 0.10m && quantScore >= 70m
+            : !limitedData && !partialDataWithHighDisagreement && marginOfSafety >= 0.10m && quantScore >= 70m
                 ? "ACCUMULATE"
                 : marginOfSafety >= 0m
                     ? "WATCH"
@@ -40,7 +46,8 @@ public sealed class BuyZoneEngine
             $"Current price {currentPrice:F2}; conservative fair value {conservative.Value:F2}.",
             $"Margin of safety {marginOfSafety:P1}.",
             $"Quant score {quantScore:F1}/100.",
-            $"Valuation confidence {valuationConfidenceLevel}."
+            $"Valuation confidence {valuationConfidenceLevel}.",
+            $"Data quality {dataQuality}."
         };
 
         if (status == "STRONG_ACCUMULATE" &&
@@ -51,6 +58,11 @@ public sealed class BuyZoneEngine
         }
 
         reasons.Add($"Accumulation status {status}.");
+
+        if (limitedData)
+            reasons.Add("Limited data quality blocks accumulation status.");
+        else if (partialDataWithHighDisagreement)
+            reasons.Add("Partial data quality combined with high valuation-method disagreement blocks accumulation status.");
 
         if (status == "REVIEW")
             reasons.Add("Current price is above the conservative fair value.");
