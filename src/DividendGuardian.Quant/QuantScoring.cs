@@ -7,22 +7,22 @@ public sealed class QuantScoringEngine
     public QuantScore Score(
         string ticker,
         decimal currentYield,
-        decimal median5YYield,
-        decimal payoutRatio,
-        decimal fcfPayoutRatio,
+        decimal? median5YYield,
+        decimal? payoutRatio,
+        decimal? fcfPayoutRatio,
         int dividendHistoryScore,
         decimal? epsCagr5Y,
         decimal? epsCagr3Y,
         decimal earningsConsistencyScore,
-        decimal peValuationScore,
-        decimal yieldValuationScore,
-        decimal fcfValuationScore,
+        decimal? peValuationScore,
+        decimal? yieldValuationScore,
+        decimal? fcfValuationScore,
         decimal riskScore)
     {
-        var yieldScore = ScoreYield(currentYield, median5YYield);
-        var sustainability = ScoreSustainability(payoutRatio, fcfPayoutRatio, dividendHistoryScore);
+        var yieldScore = ScoreYieldAvailable(currentYield, median5YYield);
+        var sustainability = ScoreSustainabilityAvailable(payoutRatio, fcfPayoutRatio, dividendHistoryScore);
         var growth = ScoreGrowth(epsCagr5Y, epsCagr3Y, earningsConsistencyScore);
-        var valuation = Clamp(peValuationScore + yieldValuationScore + fcfValuationScore, 0, 25);
+        var valuation = ScoreValuationAvailable(peValuationScore, yieldValuationScore, fcfValuationScore);
         var risk = Clamp(riskScore, 0, 15);
 
         var total = Clamp(yieldScore + sustainability + growth + valuation + risk, 0, 100);
@@ -60,16 +60,65 @@ public sealed class QuantScoringEngine
 
     public static decimal ScoreGrowth(decimal? eps5Y, decimal? eps3Y, decimal consistencyScore)
     {
-        var five = eps5Y is null
-            ? 0m
-            : eps5Y >= 12 ? 10 : eps5Y >= 8 ? 8 : eps5Y >= 5 ? 6 : eps5Y >= 0 ? 3 : 0;
+        var earned = Clamp(consistencyScore, 0, 10);
+        var available = 10m;
 
-        var three = eps3Y is null
-            ? 0m
-            : eps3Y >= 12 ? 6 : eps3Y >= 8 ? 5 : eps3Y >= 5 ? 4 : eps3Y >= 0 ? 2 : 0;
+        if (eps5Y is not null)
+        {
+            earned += eps5Y >= 12 ? 10 : eps5Y >= 8 ? 8 : eps5Y >= 5 ? 6 : eps5Y >= 0 ? 3 : 0;
+            available += 10m;
+        }
 
-        return Clamp(five + three + consistencyScore, 0, 20);
+        if (eps3Y is not null)
+        {
+            earned += eps3Y >= 12 ? 6 : eps3Y >= 8 ? 5 : eps3Y >= 5 ? 4 : eps3Y >= 0 ? 2 : 0;
+            available += 6m;
+        }
+
+        return Normalize(earned, available, 20m);
     }
+
+    private static decimal ScoreYieldAvailable(decimal currentYield, decimal? historicalYield)
+    {
+        if (currentYield <= 0) return 0;
+        if (historicalYield is null or <= 0) return 7.5m;
+        return ScoreYield(currentYield, historicalYield.Value);
+    }
+
+    private static decimal ScoreSustainabilityAvailable(decimal? payout, decimal? fcfPayout, int historyScore)
+    {
+        var earned = Clamp(historyScore, 0, 7);
+        var available = 7m;
+
+        if (payout is not null)
+        {
+            earned += payout <= 50 ? 10 : payout <= 65 ? 8 : payout <= 75 ? 6 : payout <= 90 ? 3 : 0;
+            available += 10m;
+        }
+
+        if (fcfPayout is not null)
+        {
+            earned += fcfPayout <= 60 ? 8 : fcfPayout <= 80 ? 6 : fcfPayout <= 100 ? 3 : 0;
+            available += 8m;
+        }
+
+        return Normalize(earned, available, 25m);
+    }
+
+    private static decimal ScoreValuationAvailable(decimal? pe, decimal? yield, decimal? fcf)
+    {
+        var earned = 0m;
+        var available = 0m;
+
+        if (pe is not null) { earned += Clamp(pe.Value, 0, 10); available += 10m; }
+        if (yield is not null) { earned += Clamp(yield.Value, 0, 8); available += 8m; }
+        if (fcf is not null) { earned += Clamp(fcf.Value, 0, 7); available += 7m; }
+
+        return available == 0 ? 0 : Normalize(earned, available, 25m);
+    }
+
+    private static decimal Normalize(decimal earned, decimal available, decimal targetWeight) =>
+        available <= 0 ? 0 : Clamp(earned / available * targetWeight, 0, targetWeight);
 
     private static decimal Clamp(decimal value, decimal min, decimal max) =>
         Math.Min(max, Math.Max(min, value));
