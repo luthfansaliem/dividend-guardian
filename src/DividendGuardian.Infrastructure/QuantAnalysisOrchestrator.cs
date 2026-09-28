@@ -45,8 +45,15 @@ public sealed class QuantAnalysisOrchestrator(
 
                 success++;
                 logger.LogInformation(
-                    "Quant analysis {Ticker}: score={Score:F1}, status={Status}",
-                    stock.Ticker, result.Score.TotalScore, result.Score.Status);
+                    "Quant analysis {Ticker}: score={Score:F1}, status={Status}, dataQuality={DataQuality}, PE={PE}, payout={Payout}, fcfPayout={FcfPayout}, fairValue={FairValue}",
+                    stock.Ticker,
+                    result.Score.TotalScore,
+                    result.Score.Status,
+                    result.DataQuality,
+                    result.CurrentPe?.ToString("F2") ?? "N/A",
+                    result.Metrics.PayoutRatio?.ToString("F1") ?? "N/A",
+                    result.Metrics.FcfPayoutRatio?.ToString("F1") ?? "N/A",
+                    result.FairValue.Base?.ToString("F2") ?? "N/A");
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
