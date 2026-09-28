@@ -92,7 +92,7 @@ public sealed class GroqAiAnalyst(HttpClient httpClient, AiOptions options) : IA
       "additionalProperties": false,
       "properties": {
         "ticker": { "type": "string" },
-        "verdict": { "type": "string" },
+        "verdict": { "type": "string", "enum": ["SUPPORTS_QUANT", "CHALLENGES_QUANT", "INSUFFICIENT_DATA"] },
         "why_accumulate": { "type": "string" },
         "why_not_accumulate": { "type": "string" },
         "key_risks": { "type": "array", "items": { "type": "string" } },
