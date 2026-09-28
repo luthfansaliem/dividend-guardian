@@ -158,13 +158,16 @@ public sealed class QuantAnalysisEngine
             input.Ticker,
             currentYield / 100m,
             (historicalYield ?? currentYield) / 100m,
-            metrics.PayoutRatio ?? 100m,
-            metrics.FcfPayoutRatio ?? 100m,
+            metrics.PayoutRatio,
+            metrics.FcfPayoutRatio,
             Math.Min(7, metrics.StableOrGrowingYears),
             metrics.EpsCagr5Y,
             metrics.EpsCagr3Y,
             metrics.EarningsConsistencyScore,
-            peScore, yieldScore, fcfScore, riskScore);
+            currentPe is not null && historicalPe is not null ? peScore : null,
+            historicalYield is not null ? yieldScore : null,
+            currentFcfYield is not null && historicalFcfYield is not null ? fcfScore : null,
+            riskScore);
 
         var fairValue = _fairValue.Calculate(new FairValueInput(
             LatestFiscalYearDps: latestDps > 0 ? latestDps : null,
