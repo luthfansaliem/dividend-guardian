@@ -12,7 +12,10 @@ builder.Services.Configure<DatabaseOptions>(o =>
 
 builder.Services.Configure<AiOptions>(o =>
 {
+    o.Provider = builder.Configuration["AI_PROVIDER"] ?? "openai";
     o.ApiKey = builder.Configuration["OPENAI_API_KEY"] ?? "";
+    o.GroqApiKey = builder.Configuration["GROQ_API_KEY"] ?? "";
+    o.GroqModel = builder.Configuration["GROQ_MODEL"] ?? "openai/gpt-oss-20b";
     o.Model = builder.Configuration["OPENAI_MODEL"] ?? "gpt-5.6-luna";
     o.MaxAnalysesPerDay = int.TryParse(builder.Configuration["OPENAI_MAX_ANALYSES_PER_DAY"], out var maxAnalyses) ? maxAnalyses : 10;
     o.ForceAnalysis = bool.TryParse(builder.Configuration["AI_FORCE_ANALYSIS"], out var forceAnalysis) && forceAnalysis;
@@ -103,7 +106,14 @@ builder.Services.AddSingleton<QuantAnalysisRepository>();
 builder.Services.AddSingleton<QuantAnalysisOrchestrator>();
 
 builder.Services.AddHttpClient<AiAnalyst>(c => c.Timeout = TimeSpan.FromSeconds(60));
-builder.Services.AddSingleton<IAiAnalyst>(sp => sp.GetRequiredService<AiAnalyst>());
+builder.Services.AddHttpClient<GroqAiAnalyst>(c => c.Timeout = TimeSpan.FromSeconds(60));
+builder.Services.AddSingleton<IAiAnalyst>(sp =>
+{
+    var options = sp.GetRequiredService<AiOptions>();
+    return options.Provider.Equals("groq", StringComparison.OrdinalIgnoreCase)
+        ? sp.GetRequiredService<GroqAiAnalyst>()
+        : sp.GetRequiredService<AiAnalyst>();
+});
 builder.Services.AddSingleton<AiAnalysisOrchestrator>();
 builder.Services.AddSingleton<AiTriggerPolicy>();
 builder.Services.AddSingleton<AiAnalysisRepository>();
